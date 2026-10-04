@@ -457,7 +457,7 @@
   .btn.danger{background:var(--coral-dim);color:var(--coral);}
   .btn.amber{background:var(--amber-dim);color:var(--amber);}
   #settingsOverlay #settingsSaveBtn, #settingsSaveBtn, #txSaveBtn, #sortApplyBtn{background:#2da44e;color:#0d1016;}
-  #settingsOverlay #settingsCancelBtn, #settingsCancelBtn, #txCancelBtn, #sortCancelBtn{background:#da3633;color:#0d1016;border:none;}
+  #settingsOverlay #settingsCancelBtn, #settingsCancelBtn, #txCancelBtn, #sortCancelBtn, #reserveCloseBtn{background:#da3633;color:#0d1016;border:none;}
   .btn.green{background:var(--green-dim);color:var(--green);}
   .transfer-detail-row{
     display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap;
@@ -849,6 +849,8 @@
       <div class="reserve-panel">
         <div class="reserve-stats-note" id="reserveStatsNote"></div>
       </div>
+      <div class="section-label">Weekly Transactions</div>
+      <div class="reserve-panel" id="weeklyTxnPanel"></div>
       <div class="section-label">Bills By Tag</div>
       <div class="reserve-panel" id="tagTotalsPanel"></div>
       <div class="reserve-panel">
@@ -3312,6 +3314,33 @@
     note.innerHTML = html;
   }
 
+  function renderWeeklyTxnSummary(refDate){
+    const panel = $("#weeklyTxnPanel");
+    const fdow = Number(state.settings.firstDayOfWeek) || 0;
+    const anchor = toDateOnly(refDate || new Date());
+    const startOffset = (anchor.getDay() - fdow + 7) % 7;
+    const weekStart = addDays(anchor, -startOffset);
+    const weekEnd = addDays(weekStart, 6);
+    const rows = state.transactions.filter(t => {
+      if(t.type !== "transaction") return false;
+      const d = toDateOnly(parseISO(t.date));
+      return d >= weekStart && d <= weekEnd;
+    });
+    const count = rows.length;
+    const total = round2(rows.reduce((s,t) => s + Number(t.amount || 0), 0));
+    const rangeText = fmtDate(weekStart, state.settings.dateFormat) + "  –  " + fmtDate(weekEnd, state.settings.dateFormat);
+    panel.innerHTML =
+      '<div class="reserve-stat-caption">' + escapeHtml(rangeText) + '</div>' +
+      '<div class="reserve-stat-row">' +
+        '<span class="reserve-stat-label">Transactions</span>' +
+        '<span class="reserve-stat-value">' + count + '</span>' +
+      '</div>' +
+      '<div class="reserve-stat-row">' +
+        '<span class="reserve-stat-label">Total</span>' +
+        '<span class="reserve-stat-value">' + fmtMoney(total) + '</span>' +
+      '</div>';
+  }
+
   let tagPeriodOffset = 0;
 
   function renderTagTotals(){
@@ -3331,6 +3360,7 @@
     }
     const statRows = buildReserveProjection(periodsPerYear(), tagPeriodOffset);
     renderReserveStatsNote(statRows, start);
+    renderWeeklyTxnSummary(start);
   }
 
   function renderReserveProjectionList(){
