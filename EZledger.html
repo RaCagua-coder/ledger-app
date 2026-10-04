@@ -18,8 +18,8 @@
     --surface:#161a22;
     --surface-2:#1c212b;
     --surface-alt:#000000;
-    --border:#262c38;
-    --border-soft:#424a59;
+    --border:#4a7a53;
+    --border-soft:#4a7a53;
     --text:#e7ebf3;
     --text-dim:#8b93a5;
     --text-faint:#5a6272;
@@ -73,14 +73,14 @@
     padding-top: calc(6px + env(safe-area-inset-top, 0px));
   }
   .icon-btn{
-    width:38px;height:38px;border-radius:10px;border:1px solid var(--border-soft);
+    width:38px;height:38px;border-radius:10px;border:1px solid #4a7a53;
     background:#000000;display:flex;align-items:center;justify-content:center;
     color:#a3abbd;cursor:pointer;transition:background .15s, color .15s;
   }
   .icon-btn:active{background:var(--surface-2);}
   .icon-btn svg{width:18px;height:18px;}
   .topbar-actions{display:flex;gap:8px;}
-  .brand{font-weight:800;font-size:17px;letter-spacing:-.01em;color:var(--text-dim);}
+  .brand{font-weight:800;font-size:17px;letter-spacing:-.01em;color:#4a7a53;}
 
   /* Tabs */
   .icon-btn.active-view{background:var(--blue);border-color:var(--blue);color:#fff;}
@@ -189,9 +189,9 @@
   .tag-quick-pill.tag-quick-affirm .tag-quick-amt{color:var(--affirm-bright);}
   .tag-quick-pill.tag-quick-affirm.active{background:var(--affirm-bright);color:#fff;box-shadow:none;}
   .tag-quick-pill.tag-quick-affirm.active .tag-quick-amt{color:#fff;}
-  .tag-quick-pill.tag-quick-bank{color:var(--teal);box-shadow:inset 0 0 0 1px var(--teal);border-color:transparent;}
-  .tag-quick-pill.tag-quick-bank .tag-quick-amt{color:var(--teal);}
-  .tag-quick-pill.tag-quick-bank.active{background:var(--teal);color:#fff;box-shadow:none;}
+  .tag-quick-pill.tag-quick-bank{color:#4a7a53;box-shadow:inset 0 0 0 1px #4a7a53;border-color:transparent;}
+  .tag-quick-pill.tag-quick-bank .tag-quick-amt{color:#4a7a53;}
+  .tag-quick-pill.tag-quick-bank.active{background:#4a7a53;color:#fff;box-shadow:none;}
   .tag-quick-pill.tag-quick-bank.active .tag-quick-amt{color:#fff;}
 
   /* Transaction list */
@@ -247,7 +247,7 @@
     border-radius:3px;padding:0 3px;font-size:9px;
   }
   .tag-bank-text{
-    color:var(--teal);box-shadow:inset 0 0 0 1px var(--teal);
+    color:#4a7a53;box-shadow:inset 0 0 0 1px #4a7a53;
     border-radius:3px;padding:0 3px;font-size:9px;
   }
   .tx-status-zone{
@@ -277,7 +277,7 @@
 
   /* Footer */
   .footer{
-    background:linear-gradient(180deg,#1c2a4d,#182240);border-top:1px solid #24356b;
+    background:linear-gradient(180deg,#1c3524,#182b1e);border-top:1px solid #2a4a30;
     padding:3px 6px env(safe-area-inset-bottom, 4px);
   }
   .footer-row{display:flex;gap:1px;margin-bottom:3px;}
@@ -312,7 +312,7 @@
     border-radius:3px;padding:0 3px;margin-right:2px;
   }
   .label-bank-word{
-    color:var(--teal);box-shadow:inset 0 0 0 1px var(--teal);
+    color:#4a7a53;box-shadow:inset 0 0 0 1px #4a7a53;
     border-radius:3px;padding:0 3px;margin-right:2px;
   }
   .reserve-proj-header{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:4px;padding:2px 4px 8px;border-bottom:1px solid var(--border);margin-bottom:2px;}
@@ -342,8 +342,10 @@
   .tag-total-label{font-size:13px;font-weight:700;color:var(--text-dim);}
   .tag-total-value{font-size:17px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text);}
   .tag-period-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;}
-  .tag-period-nav-fixed{flex:none;padding:8px 18px;margin:0 -18px 10px;border-bottom:1px solid var(--border);background:var(--surface);}
+  .tag-period-nav-fixed{flex:none;padding:8px 18px;margin:0 -18px 10px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:#000000;}
   .tag-period-label{flex:1;text-align:center;font-weight:800;font-size:15px;color:var(--blue);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #tagPeriodPrevBtn, #tagPeriodNextBtn{background:#4a7a53;}
+  #tagPeriodLabel{color:#4a7a53;}
   .arrow-btn.small{width:28px;height:28px;flex:none;}
   .arrow-btn.small svg{width:13px;height:13px;}
   .reserve-collapse-toggle{
@@ -366,7 +368,7 @@
   #alertOverlay{align-items:center;padding-bottom:16vh;}
   #alertOverlay .sheet{border-radius:20px;border-bottom:1px solid var(--border);margin:0 20px;width:calc(100% - 40px);}
   .sheet{
-    width:100%;max-width:480px;background:var(--surface);border-radius:20px 20px 0 0;
+    width:100%;max-width:480px;background:var(--bg);border-radius:20px 20px 0 0;
     border:1px solid var(--border);border-bottom:none;
     max-height:88vh;overflow-y:auto;padding:8px 18px calc(22px + env(safe-area-inset-bottom,0px));
     animation:slideup .22s ease;
@@ -414,15 +416,15 @@
   .tag-chip.tag-chip-affirm{border-color:var(--affirm-bright);color:var(--affirm-bright);}
   .tag-chip.tag-chip-affirm button{background:var(--affirm-bright);}
   .tag-suggest-pill.tag-suggest-affirm{border:1px solid var(--affirm-bright);color:var(--affirm-bright);}
-  .tag-chip.tag-chip-bank{border-color:var(--teal);color:var(--teal);}
-  .tag-chip.tag-chip-bank button{background:var(--teal);}
-  .tag-suggest-pill.tag-suggest-bank{border:1px solid var(--teal);color:var(--teal);}
+  .tag-chip.tag-chip-bank{border-color:#4a7a53;color:#4a7a53;}
+  .tag-chip.tag-chip-bank button{background:#4a7a53;}
+  .tag-suggest-pill.tag-suggest-bank{border:1px solid #4a7a53;color:#4a7a53;}
   .account-toggle-row{display:flex;gap:8px;}
   .account-toggle-btn{
     flex:1;padding:10px 8px;border-radius:10px;border:1px solid var(--border);background:var(--bg);
     color:var(--text-dim);font-weight:700;font-size:13px;font-family:inherit;cursor:pointer;
   }
-  .account-toggle-btn[data-account="1"].active{background:var(--teal);color:#0d1016;border-color:var(--teal);}
+  .account-toggle-btn[data-account="1"].active{background:#4a7a53;color:#0d1016;border-color:#4a7a53;}
   .account-toggle-btn[data-account="2"].active{background:var(--affirm-bright);color:#fff;border-color:var(--affirm-bright);}
   .field-row .field{flex:1;}
   .field-note{
@@ -438,7 +440,7 @@
   }
   .seg button.active{background:var(--blue);color:#fff;}
 
-  .btn-row{display:flex;gap:10px;margin-top:18px;}
+  .btn-row{display:flex;gap:10px;margin-top:18px;padding-top:12px;border-top:1px solid #4a7a53;}
   .status-icon-row{display:flex;gap:10px;margin-top:10px;}
   .status-icon-btn{
     flex:1;border:none;border-radius:12px;height:50px;display:flex;align-items:center;justify-content:center;
@@ -458,8 +460,9 @@
   #settingsOverlay .btn.ghost{background:var(--bg);}
   .btn.danger{background:var(--coral-dim);color:var(--coral);}
   .btn.amber{background:var(--amber-dim);color:var(--amber);}
-  #settingsOverlay #settingsSaveBtn, #settingsSaveBtn, #txSaveBtn, #sortApplyBtn{background:#2da44e;color:#0d1016;}
-  #settingsOverlay #settingsCancelBtn, #settingsCancelBtn, #txCancelBtn, #sortCancelBtn, #reserveCloseBtn{background:#da3633;color:#0d1016;border:none;}
+  #settingsOverlay #settingsSaveBtn, #settingsSaveBtn, #txSaveBtn, #sortApplyBtn{background:var(--green-dim);color:var(--green);border:none;}
+  #settingsOverlay #settingsCancelBtn, #settingsCancelBtn, #txCancelBtn, #sortCancelBtn, #reserveCloseBtn, #confirmCancelBtn{background:var(--coral-dim);color:var(--coral);border:none;}
+  #confirmOkBtn{background:#4a7a53;color:#0d1016;}
   .btn.green{background:var(--green-dim);color:var(--green);}
   .transfer-detail-row{
     display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap;
@@ -981,7 +984,7 @@
       </div>
       <div class="field">
         <label>Name</label>
-        <input type="text" id="txLabel" placeholder="e.g. Groceries (Affirm)">
+        <input type="text" id="txLabel" placeholder="">
       </div>
     </div>
     <div class="tx-scroll-body">
@@ -1024,7 +1027,7 @@
         <label>Tags</label>
         <div class="tag-input-box" id="tagInputBox">
           <div class="tag-chips" id="tagChips"></div>
-          <input type="text" id="txTagEntry" placeholder="Type a tag, press Enter">
+          <input type="text" id="txTagEntry" placeholder="">
         </div>
         <div class="tag-suggest-row" id="tagSuggestRow"></div>
       </div>
@@ -1037,7 +1040,7 @@
       </div>
       <div class="field">
         <label>Description</label>
-        <textarea id="txDesc" placeholder="How is this paid? Notes, card used, etc."></textarea>
+        <textarea id="txDesc" placeholder=""></textarea>
       </div>
       <div class="btn-row">
         <button class="btn danger" id="txDeleteBtn" style="display:none;">Delete</button>
