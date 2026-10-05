@@ -370,6 +370,8 @@
   #confirmOverlay, #alertOverlay{z-index:90;}
   #alertOverlay{align-items:center;padding-bottom:16vh;}
   #alertOverlay .sheet{border-radius:20px;border-bottom:1px solid var(--border);margin:0 20px;width:calc(100% - 40px);}
+  #alertOverlay.alert-success #alertOkBtn{background:var(--green-dim);color:var(--green);border:none;}
+  #alertOverlay.alert-fail #alertOkBtn{background:var(--coral-dim);color:var(--coral);border:none;}
   .sheet{
     width:100%;max-width:480px;background:var(--bg);border-radius:20px 20px 0 0;
     border:1px solid var(--border);border-bottom:none;
@@ -2058,8 +2060,10 @@
     if(cb) cb();
   });
 
-  function showAlert(message){
+  function showAlert(message, kind){
     $("#alertMessage").textContent = message;
+    $("#alertOverlay").classList.remove("alert-success","alert-fail");
+    if(kind) $("#alertOverlay").classList.add("alert-" + kind);
     openSheet("alertOverlay");
   }
   $("#alertOkBtn").addEventListener("click", () => closeSheet("alertOverlay"));
@@ -3459,7 +3463,7 @@
           if(navigator.canShare({ files: [file] })){
             await navigator.share({ files: [file], title: filename });
             closeSheet("settingsOverlay");
-            showAlert("Backup saved successfully.");
+            showAlert("Backup saved successfully.", "success");
             return;
           }
         }catch(shareErr){
@@ -3467,7 +3471,7 @@
           // second download — just let them know nothing was saved, and stay
           // on whatever screen they were on.
           if(shareErr && shareErr.name === "AbortError"){
-            showAlert("Save canceled.");
+            showAlert("Save canceled.", "fail");
             return;
           }
           // Any other failure from the share sheet is a real failure — report
@@ -3487,9 +3491,9 @@
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 2000);
       closeSheet("settingsOverlay");
-      showAlert("Backup saved successfully.");
+      showAlert("Backup saved successfully.", "success");
     }catch(e){
-      showAlert("Couldn't create the backup file.");
+      showAlert("Couldn't create the backup file.", "fail");
     }
   }
   $("#exportBtn").addEventListener("click", exportBackup);
