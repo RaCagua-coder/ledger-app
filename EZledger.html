@@ -86,6 +86,7 @@
 
   /* Tabs */
   .icon-btn.active-view{background:var(--blue);border-color:var(--blue);color:#fff;}
+  #calendarBtn.active-view{background:#4a7a53;border-color:#4a7a53;}
 
   #transactionsView{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;position:relative;}
   #calendarView{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
@@ -147,7 +148,7 @@
   .pill svg{width:11px;height:11px;}
   .bill-pill{background:var(--coral);}
   .income-pill{background:var(--green);}
-  .misc-pill{background:var(--misc);}
+  .misc-pill{background:#4a7a53;}
 
 
   .list-filter-wrap{position:relative;order:2;}
@@ -335,6 +336,21 @@
   .reserve-stat-label{font-size:13px;font-weight:700;color:var(--text-dim);}
   .reserve-stat-value{font-size:17px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text);}
   .reserve-panel{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;}
+  .sts-panel{border-color:#4a7a53;}
+  .sts-carryover-input{
+    background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:4px 9px;
+    color:var(--text);font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;
+    text-align:right;width:92px;
+  }
+  .sts-carryover-input:focus{outline:none;border-color:#4a7a53;}
+  .sts-carryover-input::placeholder{color:var(--text-faint);}
+  .sts-result-row{
+    display:flex;align-items:baseline;justify-content:space-between;
+    margin-top:12px;padding-top:12px;border-top:1px solid var(--border);
+  }
+  .sts-result-label{font-size:13px;font-weight:700;color:var(--text-dim);}
+  .sts-result-value{font-size:23px;font-weight:800;font-family:'JetBrains Mono',monospace;color:#4a7a53;}
+  .sts-result-value.neg{color:var(--coral);}
   .reserve-panel .field{margin-bottom:0;}
   .tag-total-row{
     display:flex;align-items:center;justify-content:space-between;width:100%;
@@ -349,6 +365,8 @@
   .tag-period-label{flex:1;text-align:center;font-weight:800;font-size:15px;color:var(--blue);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   #tagPeriodPrevBtn, #tagPeriodNextBtn{background:#4a7a53;}
   #tagPeriodLabel{color:#4a7a53;}
+  #calPrevBtn, #calNextBtn{background:#4a7a53;}
+  #calMonthLabel{color:#4a7a53;}
   .arrow-btn.small{width:28px;height:28px;flex:none;}
   .arrow-btn.small svg{width:13px;height:13px;}
   .reserve-collapse-toggle{
@@ -571,24 +589,24 @@
   .calc-use svg{width:16px;height:16px;}
   .calc-body{flex:1;display:flex;flex-direction:column;padding:10px 10px 6px;min-height:0;}
   .calc-display{
-    background:var(--surface-2);border:1px solid var(--border);border-radius:10px;
+    background:#000000;border:1px solid var(--border);border-radius:10px;
     padding:10px 12px;text-align:right;margin-bottom:8px;flex:none;
   }
   .calc-display .calc-expr{font-size:11px;color:var(--text-faint);min-height:14px;font-family:'JetBrains Mono',monospace;}
   .calc-display .calc-value{font-size:22px;font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace;word-break:break-all;}
   .calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;flex:1;min-height:0;}
   .calc-btn{
-    background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    background:#0d0d0d;border:1px solid var(--border);color:var(--text);
     border-radius:9px;padding:0;font-size:20px;font-weight:700;cursor:pointer;font-family:inherit;
     touch-action:manipulation;user-select:none;-webkit-user-select:none;
   }
   .calc-btn:active, .calc-btn.pressed{background:var(--border);}
-  .calc-btn.op{background:var(--blue);color:#fff;border-color:var(--blue);}
-  .calc-btn.op:active, .calc-btn.op.pressed{background:var(--blue);filter:brightness(1.25);}
-  .calc-btn.op.active{background:#fff;color:var(--blue);border-color:#fff;}
+  .calc-btn.op{background:#4a7a53;color:#fff;border-color:#4a7a53;}
+  .calc-btn.op:active, .calc-btn.op.pressed{background:#4a7a53;filter:brightness(1.25);}
+  .calc-btn.op.active{background:#fff;color:#4a7a53;border-color:#fff;}
   .calc-btn.op.active:active, .calc-btn.op.active.pressed{background:#fff;filter:none;}
-  .calc-btn.eq{background:var(--green);color:#0d1016;border-color:var(--green);}
-  .calc-btn.eq:active, .calc-btn.eq.pressed{background:var(--green);filter:brightness(1.15);}
+  .calc-btn.eq{background:#4a7a53;color:#fff;border-color:#4a7a53;}
+  .calc-btn.eq:active, .calc-btn.eq.pressed{background:#4a7a53;filter:brightness(1.15);}
   .calc-btn.fn{color:var(--coral);}
   .calc-btn.wide{grid-column:span 2;}
   .calc-resize{
@@ -616,18 +634,21 @@
 
   /* Calendar */
   .cal-wrap{padding:16px 14px;flex:1;}
-  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
-  .cal-dow{text-align:center;font-size:11px;color:var(--text-faint);font-weight:700;padding-bottom:6px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;}
+  .cal-dow{text-align:center;font-size:12px;color:var(--text-faint);font-weight:700;padding-bottom:8px;}
   .cal-cell{
-    aspect-ratio:1;border-radius:9px;background:var(--surface-2);display:flex;flex-direction:column;
-    align-items:center;justify-content:center;font-size:13px;color:var(--text-dim);position:relative;font-weight:600;
-    border:1px solid var(--border-soft);cursor:pointer;
+    aspect-ratio:0.8;border-radius:10px;background:var(--surface-2);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;font-size:14px;color:var(--text-dim);position:relative;font-weight:700;
+    border:1px solid var(--border-soft);cursor:pointer;gap:3px;
   }
   .cal-cell.empty{background:none;border:none;}
-  .cal-cell.today{border-color:var(--blue);color:var(--text);}
-  .cal-dot{width:5px;height:5px;border-radius:50%;position:absolute;bottom:6px;}
-  .cal-dot.unpaid{background:var(--coral);}
-  .cal-dot.paid{background:var(--green);}
+  .cal-cell.today{border-color:#4a7a53;box-shadow:0 0 0 1px #4a7a53 inset;color:var(--text);}
+  .cal-cell.has-due{background:rgba(122,74,74,0.22);border-color:#7a4a4a;color:var(--text);}
+  .cal-cell.all-paid{background:rgba(74,122,83,0.16);border-color:#4a7a53;color:var(--text);}
+  .cal-day-num{font-size:14px;line-height:1;}
+  .cal-amt{font-size:10.5px;font-weight:800;line-height:1;}
+  .cal-amt.due{color:#e39a9a;}
+  .cal-amt.paid{color:#4a7a53;}
 
   ::-webkit-scrollbar{width:0;height:0;}
 </style>
@@ -856,6 +877,22 @@
       <button type="button" class="arrow-btn small" id="tagPeriodNextBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
     </div>
     <div class="reserve-scroll" id="reserveScroll" style="flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;">
+      <div class="section-label">Daily Safe-to-Spend</div>
+      <div class="reserve-panel sts-panel">
+        <div class="reserve-stat-caption" id="stsDaysCaption"></div>
+        <div class="reserve-stat-row">
+          <span class="reserve-stat-label">Available (after bills)</span>
+          <span class="reserve-stat-value" id="stsAvailable">$0.00</span>
+        </div>
+        <div class="reserve-stat-row">
+          <span class="reserve-stat-label">Leave to carry over</span>
+          <input type="text" inputmode="decimal" id="carryoverInput" class="sts-carryover-input" placeholder="0.00">
+        </div>
+        <div class="sts-result-row">
+          <span class="sts-result-label">Safe to spend / day</span>
+          <span class="sts-result-value" id="stsPerDay">$0.00</span>
+        </div>
+      </div>
       <div class="reserve-panel">
         <div class="reserve-stats-note" id="reserveStatsNote"></div>
       </div>
@@ -1212,7 +1249,8 @@
         dateFormat: "mdy",
         accountCount: 2,
         account1Name: "Bank Account",
-        account2Name: "Affirm"
+        account2Name: "Affirm",
+        carryoverGoal: 0
       },
       viewMode: "1",
       sort: { by:"dueDate", order:"asc", tagValue:null },
@@ -1996,9 +2034,9 @@
 
     const byDate = {};
     state.transactions.forEach(t => {
-      byDate[t.date] = byDate[t.date] || { unpaid:false, paid:false };
-      if(t.status === "paid") byDate[t.date].paid = true;
-      else byDate[t.date].unpaid = true;
+      byDate[t.date] = byDate[t.date] || { unpaidAmt:0, paidAmt:0 };
+      if(t.status === "paid") byDate[t.date].paidAmt += t.amount;
+      else byDate[t.date].unpaidAmt += t.amount;
     });
 
     let html = ordered.map(i => `<div class="cal-dow">${dowNames[i]}</div>`).join("");
@@ -2008,8 +2046,16 @@
       const dISO = fmtISO(new Date(y,m,day));
       const info = byDate[dISO];
       const isToday = dISO === today;
-      html += `<div class="cal-cell ${isToday?"today":""}" data-date="${dISO}">${day}
-        ${info && info.unpaid ? '<span class="cal-dot unpaid"></span>' : (info && info.paid ? '<span class="cal-dot paid"></span>' : "")}
+      let stateClass = "", marker = "";
+      if(info && info.unpaidAmt > 0){
+        stateClass = "has-due";
+        marker = `<span class="cal-amt due">$${Math.round(info.unpaidAmt)}</span>`;
+      }else if(info && info.paidAmt > 0){
+        stateClass = "all-paid";
+        marker = `<span class="cal-amt paid">&#10003;</span>`;
+      }
+      html += `<div class="cal-cell ${isToday?"today":""} ${stateClass}" data-date="${dISO}">
+        <span class="cal-day-num">${day}</span>${marker}
       </div>`;
     }
     $("#calGrid").innerHTML = html;
@@ -3353,6 +3399,80 @@
       '</div>';
   }
 
+  // ---------- Daily Safe-to-Spend ----------
+  // Always based on TODAY's actual pay period (not whatever period the
+  // Overview tag-nav above happens to be scrolled to) — the question this
+  // answers is "how much can I spend per day between now and my next
+  // payday," which only makes sense anchored to the present.
+  function computeSafeToSpend(){
+    const todayDate = toDateOnly(new Date());
+    const pStart = periodStartContaining(todayDate);
+    const pEnd = periodEnd(pStart);
+    const pStartISO = fmtISO(pStart);
+    const nextPayday = addDays(pEnd, 1);
+    const daysUntil = Math.max(1, Math.round((nextPayday - todayDate) / 86400000));
+
+    const bal = state.bankBalances[pStartISO];
+    const isOutstanding = t => t.status === "unpaid" || (t.status === "pending" && !t.deducted);
+    const outstanding = state.transactions
+      .filter(t => (t.type === "bill" || t.type === "transaction") && toDateOnly(parseISO(t.date)) <= pEnd)
+      .filter(t => !isAffirmTag(t.tags))
+      .filter(isOutstanding)
+      .reduce((s,t) => s + t.amount, 0);
+
+    return { bal, outstanding, daysUntil, nextPayday };
+  }
+
+  function renderSafeToSpend(){
+    const { bal, outstanding, daysUntil, nextPayday } = computeSafeToSpend();
+    $("#stsDaysCaption").textContent =
+      daysUntil + (daysUntil === 1 ? " day" : " days") + " until payday (" +
+      fmtDate(nextPayday, state.settings.dateFormat) + ")";
+
+    if($("#carryoverInput") !== document.activeElement){
+      const g = Number(state.settings.carryoverGoal) || 0;
+      $("#carryoverInput").value = g ? fmtMoney(g) : "";
+    }
+
+    const perDayEl = $("#stsPerDay");
+    if(bal === null || bal === undefined || bal === ""){
+      $("#stsAvailable").textContent = "—";
+      perDayEl.textContent = "—";
+      perDayEl.className = "sts-result-value";
+      return;
+    }
+    const available = Number(bal) - outstanding;
+    $("#stsAvailable").textContent = fmtMoney(available);
+    const goal = Number(state.settings.carryoverGoal) || 0;
+    const perDay = (available - goal) / daysUntil;
+    perDayEl.textContent = fmtMoney(perDay);
+    perDayEl.className = "sts-result-value" + (perDay < 0 ? " neg" : "");
+  }
+
+  $("#carryoverInput").addEventListener("input", (e) => {
+    const v = e.target.value.replace(/[$,]/g, "");
+    state.settings.carryoverGoal = v === "" ? 0 : Number(v);
+    renderSafeToSpend();
+    save();
+  });
+  $("#carryoverInput").addEventListener("focus", (e) => {
+    const g = Number(state.settings.carryoverGoal) || 0;
+    e.target.value = g ? String(g) : "";
+    pinCursorToEnd2(e);
+  });
+  $("#carryoverInput").addEventListener("click", pinCursorToEnd2);
+  $("#carryoverInput").addEventListener("blur", (e) => {
+    const g = Number(state.settings.carryoverGoal) || 0;
+    e.target.value = g ? fmtMoney(g) : "";
+  });
+  function pinCursorToEnd2(e){
+    const el = e.target;
+    setTimeout(() => {
+      const len = el.value.length;
+      try{ el.setSelectionRange(len, len); }catch(err){}
+    }, 0);
+  }
+
   let tagPeriodOffset = 0;
 
   function renderTagTotals(){
@@ -3395,6 +3515,7 @@
 
   function openReserveSheet(){
     tagPeriodOffset = 0;
+    renderSafeToSpend();
     renderTagTotals();
     renderReserveProjectionList();
     $("#reserveProjToggle").classList.remove("open");
