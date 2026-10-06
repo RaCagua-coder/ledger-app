@@ -131,7 +131,8 @@
   .tag-filter-chip{
     display:flex;align-items:center;gap:6px;background:#000000;border:1.5px solid var(--blue);
     color:var(--blue);font-size:12px;font-weight:700;padding:0 8px;border-radius:6px;
-    cursor:pointer;order:4;flex:none;height:24px;max-width:140px;
+    cursor:pointer;flex:none;height:24px;max-width:calc(100% - 28px);width:fit-content;
+    margin:7px 14px 0;
   }
   .tag-filter-chip #tagFilterLabel{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .view-toggle-wide{width:auto;padding:0 8px;}
@@ -711,10 +712,6 @@
           <button type="button" class="list-filter-option" data-sortcycle="tag">Tag</button>
         </div>
       </div>
-      <div class="tag-filter-chip" id="tagFilterChip" style="display:none;">
-        <span id="tagFilterLabel">Filtering: </span>
-        <button id="tagFilterClearBtn" aria-label="Clear tag filter">×</button>
-      </div>
       <div class="pill-actions">
         <button class="pill bill-pill" id="addBillBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Bill</button>
         <button class="pill misc-pill" id="addTransactionBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Txn</button>
@@ -728,6 +725,10 @@
       </span>
       <span id="todayDateBar"></span>
       <span id="txCountBar">BILLS  $0.00</span>
+    </div>
+    <div class="tag-filter-chip" id="tagFilterChip" style="display:none;">
+      <span id="tagFilterLabel">Filtering: </span>
+      <button id="tagFilterClearBtn" aria-label="Clear tag filter">×</button>
     </div>
     <div class="tag-quick-bar" id="tagQuickBar" style="display:none;"></div>
     <div class="tx-list" id="txList"><div id="txListInner"></div></div>
@@ -1973,8 +1974,12 @@
     const tag = btn.dataset.tag;
     if(state.tagFilters && state.tagFilters.length === 1 && state.tagFilters[0] === tag){
       state.tagFilters = [];
+      state.sort.tagValue = null;
     } else {
       state.tagFilters = [tag];
+      // Drive the same Due Date/Paid/Tag box's text (it already renders
+      // "Tag: <tagValue>" in renderAll) instead of showing a second box.
+      state.sort.tagValue = tag;
     }
     updateTagFilterChip();
     renderAll();
@@ -3221,9 +3226,16 @@
     drawTagFilterList();
   });
 
+  // A single tag selected (the common case — tapping a pill in the
+  // scrolling tag bar) is shown by updating the existing Due Date/Paid/Tag
+  // box's text (via the "Tag: X" label in renderAll), not a separate box.
+  // Only 2+ tags (only reachable via the Sort & Filter sheet's multi-select)
+  // get the full "Filtering: a, b" bar above the scrolling tag bar, since a
+  // single label box can't show more than one name.
   function updateTagFilterChip(){
     const chip = $("#tagFilterChip");
-    if(state.tagFilters && state.tagFilters.length){
+    const n = (state.tagFilters || []).length;
+    if(n > 1){
       chip.style.display = "flex";
       $("#tagFilterLabel").textContent = "Filtering: " + state.tagFilters.join(", ");
     } else {
