@@ -112,6 +112,19 @@
   .slide-old{position:absolute;top:0;left:0;width:100%;}
   .slide-peek{position:absolute;top:0;left:0;width:100%;}
 
+  .range-label .current-period-dot{
+    display:inline-block;width:11px;height:11px;border-radius:50%;background:#4a7a53;
+    vertical-align:middle;position:relative;
+    animation:periodDotPulse 1.8s ease-out infinite;
+  }
+  .range-label .current-period-dot.dot-left{margin-right:11px;margin-bottom:2px;}
+  .range-label .current-period-dot.dot-right{margin-left:11px;margin-bottom:2px;}
+  @keyframes periodDotPulse{
+    0%{box-shadow:0 0 0 0 rgba(74,122,83,0.55);}
+    70%{box-shadow:0 0 0 8px rgba(74,122,83,0);}
+    100%{box-shadow:0 0 0 0 rgba(74,122,83,0);}
+  }
+
   .view-row{
     display:flex;align-items:center;justify-content:space-between;gap:10px;
     padding:8px 14px;flex-wrap:wrap;row-gap:8px;
@@ -507,8 +520,9 @@
   }
   .qr-canvas-wrap canvas{display:block;width:220px;height:220px;}
   .qr-url-text{
-    font-size:13px;color:var(--text-dim);text-align:center;word-break:break-all;
-    margin-bottom:4px;
+    font-size:13px;color:var(--text-dim);text-align:center;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    margin-bottom:4px;padding:0 4px;
   }
   #qrOpenBtn{background:#4a7a53;color:#fff;border:none;}
 
@@ -537,6 +551,10 @@
   #sortOverlay .sheet{display:flex;flex-direction:column;overflow:hidden;}
   #sortOverlay .sort-scroll-body{flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;}
   #sortOverlay .btn-row{flex:none;}
+  #txOverlay .sheet{display:flex;flex-direction:column;overflow:hidden;max-height:88vh;}
+  #txOverlay .tx-fixed-header{flex:none;}
+  #txOverlay .tx-scroll-body{flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;}
+  #txOverlay .btn-row{flex:none;margin-top:0;}
   #settingsOverlay .sheet{display:flex;flex-direction:column;overflow:hidden;overflow-x:hidden;}
   #settingsOverlay .settings-scroll-body{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;-webkit-overflow-scrolling:touch;}
   #settingsOverlay .btn-row{flex:none;margin-top:10px;}
@@ -1105,11 +1123,11 @@
         <label>Website</label>
         <input type="url" inputmode="url" id="txUrl" placeholder="https://">
       </div>
-      <div class="btn-row">
-        <button class="btn danger" id="txDeleteBtn" style="display:none;">Delete</button>
-        <button class="btn ghost" id="txCancelBtn">Cancel</button>
-        <button class="btn primary" id="txSaveBtn">Save</button>
-      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn danger" id="txDeleteBtn" style="display:none;">Delete</button>
+      <button class="btn ghost" id="txCancelBtn">Cancel</button>
+      <button class="btn primary" id="txSaveBtn">Save</button>
     </div>
   </div>
 </div>
@@ -4004,8 +4022,21 @@ var qrcode = function() {
     return fmtDate(start, state.settings.dateFormat) + "  –  " + fmtDate(end, state.settings.dateFormat);
   }
 
+  // True whenever today's date falls inside whatever range is currently
+  // on screen (single period, 2-period view, or the selected month) —
+  // used to flag "you're looking at the period you're actually in".
+  function isCurrentPeriodShown(){
+    const { start, end } = displayRange();
+    const today = toDateOnly(new Date());
+    return today >= start && today <= end;
+  }
+
   function renderRangeLabel(){
-    $("#rangeLabel").textContent = buildRangeLabelText();
+    const text = buildRangeLabelText();
+    const dot = '<span class="current-period-dot DOTSIDE"></span>';
+    $("#rangeLabel").innerHTML = isCurrentPeriodShown()
+      ? dot.replace("DOTSIDE", "dot-left") + escapeHtml(text) + dot.replace("DOTSIDE", "dot-right")
+      : escapeHtml(text);
     $("#paycheckDateLabel").textContent = "Paycheck " + fmtDate(currentAnchorDate(), state.settings.dateFormat);
     $("#todayDateBar").textContent = fmtDate(new Date(), state.settings.dateFormat);
   }
