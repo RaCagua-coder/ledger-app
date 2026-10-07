@@ -186,7 +186,8 @@
     padding:7px 14px;font-weight:700;font-size:13px;letter-spacing:.02em;
     border-top:1px solid #2a4a30;border-bottom:1px solid #2a4a30;
   }
-  .tx-count-bar .paycheck-side{display:flex;align-items:center;gap:5px;}
+  .tx-count-bar .paycheck-side{display:flex;align-items:center;gap:5px;cursor:pointer;}
+  .tx-count-bar .paycheck-side:active{opacity:0.6;}
   .tx-count-bar .paycheck-side svg{width:13px;height:13px;flex:none;}
   #txCountBar{font-size:12px;}
 
@@ -750,7 +751,7 @@
     </div>
 
     <div class="tx-count-bar">
-      <span class="paycheck-side">
+      <span class="paycheck-side" id="paycheckJumpBtn" aria-label="Jump to current pay period">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
         <span id="paycheckDateLabel">Paycheck –</span>
       </span>
@@ -4001,6 +4002,22 @@ var qrcode = function() {
     state.currentStartISO = fmtISO(next);
   }
 
+  // Snaps the view straight back to whichever period actually contains
+  // today, no matter how many periods forward/back you've navigated.
+  function jumpToCurrentPeriod(){
+    openStatusPickerId = null;
+    openActionMenuId = null;
+    if(state.viewMode === "M"){
+      const today = new Date();
+      state.viewMonthISO = fmtISO(new Date(today.getFullYear(), today.getMonth(), 1));
+    } else {
+      state.currentStartISO = fmtISO(periodStartContaining(new Date()));
+    }
+    renderAll();
+    const listBox = $("#txList");
+    if(listBox) listBox.scrollTop = 0;
+  }
+
   // Computes what the range-label text would be for the period one step
   // away (dir = -1 or 1), without disturbing the real current period.
   function peekPeriodText(dir){
@@ -4575,6 +4592,7 @@ var qrcode = function() {
     setTimeout(cleanup, 350);
   }
 
+  $("#paycheckJumpBtn").addEventListener("click", () => { jumpToCurrentPeriod(); });
   $("#prevBtn").addEventListener("click", () => { animatePeriodChange(-1); });
   $("#nextBtn").addEventListener("click", () => { animatePeriodChange(1); });
 
