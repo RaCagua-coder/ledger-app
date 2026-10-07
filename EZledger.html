@@ -38,7 +38,8 @@
     --teal:#2dd4bf;
     --blue:#5b8cff;
     --affirm:#5b4fff;
-    --affirm-bright:#a86df0;
+    --affirm-bright:#5b4fff;
+    --bank-green:#00c700;
     --misc:#9099ad;
     --radius:14px;
     --radius-sm:10px;
@@ -208,9 +209,9 @@
   .tag-quick-pill.tag-quick-affirm .tag-quick-amt{color:var(--affirm-bright);}
   .tag-quick-pill.tag-quick-affirm.active{background:var(--affirm-bright);color:#fff;box-shadow:none;}
   .tag-quick-pill.tag-quick-affirm.active .tag-quick-amt{color:#fff;}
-  .tag-quick-pill.tag-quick-bank{color:#4a7a53;box-shadow:inset 0 0 0 1px #4a7a53;border-color:transparent;}
-  .tag-quick-pill.tag-quick-bank .tag-quick-amt{color:#4a7a53;}
-  .tag-quick-pill.tag-quick-bank.active{background:#4a7a53;color:#fff;box-shadow:none;}
+  .tag-quick-pill.tag-quick-bank{color:var(--bank-green);box-shadow:inset 0 0 0 1px var(--bank-green);border-color:transparent;}
+  .tag-quick-pill.tag-quick-bank .tag-quick-amt{color:var(--bank-green);}
+  .tag-quick-pill.tag-quick-bank.active{background:var(--bank-green);color:#fff;box-shadow:none;}
   .tag-quick-pill.tag-quick-bank.active .tag-quick-amt{color:#fff;}
 
   /* Transaction list */
@@ -250,6 +251,9 @@
   .status-picker-row .status-icon-btn.paid span{font-size:12px;}
   .status-picker-row .status-icon-lines{display:flex;flex-direction:column;align-items:center;}
   .status-picker-row .status-icon-btn span{font-size:10.5px;font-weight:800;color:#0d1016;line-height:1;white-space:normal;text-align:center;}
+  .acct-bar{width:7px;align-self:stretch;border-radius:3px;margin-right:5px;flex:none;}
+  .acct-bar.acct-bar-bank{background:var(--bank-green);}
+  .acct-bar.acct-bar-affirm{background:var(--affirm-bright);}
   .tx-main{flex:1;min-width:0;}
   .tx-label{font-weight:700;font-size:15.5px;color:var(--text);line-height:1.25;display:flex;align-items:center;gap:5px;}
   .repeat-badge{color:var(--text-faint);flex:none;}
@@ -266,7 +270,7 @@
     border-radius:3px;padding:0 3px;font-size:9px;
   }
   .tag-bank-text{
-    color:#4a7a53;box-shadow:inset 0 0 0 1px #4a7a53;
+    color:var(--bank-green);box-shadow:inset 0 0 0 1px var(--bank-green);
     border-radius:3px;padding:0 3px;font-size:9px;
   }
   .tx-status-zone{
@@ -331,7 +335,7 @@
     border-radius:3px;padding:0 3px;margin-right:2px;
   }
   .label-bank-word{
-    color:#4a7a53;box-shadow:inset 0 0 0 1px #4a7a53;
+    color:var(--bank-green);box-shadow:inset 0 0 0 1px var(--bank-green);
     border-radius:3px;padding:0 3px;margin-right:2px;
   }
   .reserve-proj-header{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:4px;padding:2px 4px 8px;border-bottom:1px solid var(--border);margin-bottom:2px;}
@@ -457,15 +461,15 @@
   .tag-chip.tag-chip-affirm{border-color:var(--affirm-bright);color:var(--affirm-bright);}
   .tag-chip.tag-chip-affirm button{background:var(--affirm-bright);}
   .tag-suggest-pill.tag-suggest-affirm{border:1px solid var(--affirm-bright);color:var(--affirm-bright);}
-  .tag-chip.tag-chip-bank{border-color:#4a7a53;color:#4a7a53;}
-  .tag-chip.tag-chip-bank button{background:#4a7a53;}
-  .tag-suggest-pill.tag-suggest-bank{border:1px solid #4a7a53;color:#4a7a53;}
+  .tag-chip.tag-chip-bank{border-color:var(--bank-green);color:var(--bank-green);}
+  .tag-chip.tag-chip-bank button{background:var(--bank-green);}
+  .tag-suggest-pill.tag-suggest-bank{border:1px solid var(--bank-green);color:var(--bank-green);}
   .account-toggle-row{display:flex;gap:8px;}
   .account-toggle-btn{
     flex:1;padding:10px 8px;border-radius:10px;border:1px solid var(--border);background:var(--bg);
     color:var(--text-dim);font-weight:700;font-size:13px;font-family:inherit;cursor:pointer;
   }
-  .account-toggle-btn[data-account="1"].active{background:#4a7a53;color:#0d1016;border-color:#4a7a53;}
+  .account-toggle-btn[data-account="1"].active{background:var(--bank-green);color:#0d1016;border-color:var(--bank-green);}
   .account-toggle-btn[data-account="2"].active{background:var(--affirm-bright);color:#fff;border-color:var(--affirm-bright);}
   .field-row .field{flex:1;}
   .field-note{
@@ -4166,20 +4170,27 @@ var qrcode = function() {
         amtClass = "paid"; statusClass = "paid";
       }
       const menuOpen = (t.id === openStatusPickerId && t.type !== "income") || (t.id === openActionMenuId);
+      // Account bar: a thin vertical stripe just left of the label that
+      // stands in for the account-name tag (purple = account 2, green =
+      // account 1), instead of printing the account name as a text chip.
+      const acctBarHTML = (accountCount() === 2 && t.type !== "income")
+        ? `<span class="acct-bar ${isAffirmTag(t.tags) ? "acct-bar-affirm" : "acct-bar-bank"}"></span>`
+        : "";
       return `<div class="tx-row${menuOpen ? " menu-active" : ""}" data-id="${t.id}">
+        ${acctBarHTML}
         <div class="tx-main">
           <div class="tx-label ${amtClass}">${escapeHtml(t.label)}${t.seriesId ? `<span class="repeat-badge" title="${REPEAT_LABELS[t.repeat]||"Repeating"}">${REPEAT_ICON}</span>` : ""}${t.type === "transaction" ? `<span class="txn-badge">TXN</span>` : ""}</div>
           ${(() => {
             // The "TXN" auto-tag already shows as the badge next to the label,
             // so it's left out of the tag list here to avoid showing it twice.
+            // The account name (Bank/Affirm) is now shown as the colored
+            // bar to the left instead of as a text chip here.
             const rawTags = (Array.isArray(t.tags) ? t.tags : []).filter(tag => tag.toLowerCase() !== "txn");
             const a1Name = account1Name(), a2Name = account2Name();
-            const hasAcctTag = rawTags.some(tag => tag.toLowerCase() === a1Name.toLowerCase() || tag.toLowerCase() === a2Name.toLowerCase());
-            const visibleTags = (accountCount() === 2 && t.type !== "income" && !hasAcctTag) ? [a1Name, ...rawTags] : rawTags;
+            const visibleTags = rawTags.filter(tag => tag.toLowerCase() !== a1Name.toLowerCase() && tag.toLowerCase() !== a2Name.toLowerCase());
             return (t.description || visibleTags.length) ? `<div class="tx-meta-line">${[
               visibleTags.length ? visibleTags.map(tag => {
-                const cls = tag.toLowerCase() === account2Name().toLowerCase() ? " tag-affirm-text" : (tag.toLowerCase() === account1Name().toLowerCase() ? " tag-bank-text" : "");
-                return `<span class="tx-tags-part${cls}">${escapeHtml(tag)}</span>`;
+                return `<span class="tx-tags-part">${escapeHtml(tag)}</span>`;
               }).join('<span class="tx-tags-part"> · </span>') : "",
               t.description ? `<span class="tx-desc-part">${escapeHtml(t.description)}</span>` : ""
             ].filter(Boolean).join(' ')}</div>` : "";
