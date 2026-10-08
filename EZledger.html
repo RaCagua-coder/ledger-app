@@ -4118,7 +4118,12 @@ var qrcode = function() {
       } else { av = a.date; bv = b.date; }
       if(av < bv) return -1*dir;
       if(av > bv) return 1*dir;
-      if(by === "dueDate"){
+      if(by === "paid"){
+        // Same status rank: fall back to due date order.
+        if(a.date < b.date) return -1;
+        if(a.date > b.date) return 1;
+      }
+      if(by === "dueDate" || by === "paid"){
         const al = a.label.toLowerCase(), bl = b.label.toLowerCase();
         if(al < bl) return -1;
         if(al > bl) return 1;
