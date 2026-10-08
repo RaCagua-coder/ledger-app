@@ -6219,6 +6219,7 @@ var qrcode = function() {
           calcState.expr = snap.expr;
           calcState.pendingOp = snap.pendingOp;
           calcState.waitingForOperand = snap.waitingForOperand;
+          calcState.justEvaluated = !!snap.justEvaluated;
         } else {
           calcState.expr = "";
           calcState.pendingOp = null;
@@ -6246,8 +6247,12 @@ var qrcode = function() {
     } else if(def.action === "op"){
       // Snapshot what things looked like right before this operator is
       // applied, so a backspace right after can undo just this press.
-      calcState.prevOpSnapshot = { expr: calcState.expr, pendingOp: calcState.pendingOp, waitingForOperand: calcState.waitingForOperand };
-      if(calcState.waitingForOperand && calcState.expr){
+      calcState.prevOpSnapshot = { expr: calcState.expr, pendingOp: calcState.pendingOp, waitingForOperand: calcState.waitingForOperand, justEvaluated: calcState.justEvaluated };
+      if(calcState.justEvaluated){
+        // Right after "=": start a fresh chain from the result instead of
+        // re-appending onto the finished (and now stale) equation string.
+        calcState.expr = calcState.value + " " + def.op;
+      } else if(calcState.waitingForOperand && calcState.expr){
         // No new number typed since the last operator — just swap which
         // operator is pending instead of re-inserting the same operand.
         calcState.expr = calcState.expr.slice(0, -1) + def.op;
@@ -6299,7 +6304,9 @@ var qrcode = function() {
   $("#calcBtn").addEventListener("click", () => {
     calcTargetInputId = null;
     $("#calcUseBtn").style.display = "none";
-    calcState.expr = ""; calcState.value = "0"; calcState.pendingOp = null; calcState.waitingForOperand = false; calcState.justEvaluated = false;
+    // Keep whatever was left on screen from last time the home calculator was
+    // open (cleared only by the C button or a page/app reload), rather than
+    // wiping it back to 0 on every open.
     calcRender();
     positionCalcSafely();
   });
