@@ -146,7 +146,7 @@
     display:flex;background:#0d1a12;border-bottom:1px solid #2a4a30;
   }
   .sts-mini-item{
-    flex:1;display:flex;align-items:baseline;justify-content:center;
+    flex:1;display:flex;align-items:center;justify-content:center;
     gap:5px;padding:9px 4px;border-right:1px solid #2a4a30;
   }
   .sts-mini-item:last-child{border-right:none;}
@@ -774,7 +774,7 @@
     </div>
     <div class="sts-mini-bar">
       <div class="sts-mini-item">
-        <span class="sts-mini-label">Account 1</span>
+        <span class="sts-mini-label" id="stsMiniAcctLabel">Account 1</span>
         <span class="sts-mini-value" id="stsMiniAvailable">$0.00</span>
       </div>
       <div class="sts-mini-item">
@@ -4566,6 +4566,7 @@ var qrcode = function() {
     $$(".label-affirm-word").forEach(el => el.textContent = a2);
     const single = accountCount() === 1;
     $$(".acct2-item").forEach(el => el.style.display = single ? "none" : "");
+    $("#stsMiniAcctLabel").textContent = account1Name();
   }
 
   function renderAll(){
