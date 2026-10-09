@@ -129,14 +129,27 @@
   .cal-wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 
   /* Date range bar */
+  .period-status-strip{
+    display:flex;background:#132017;border-bottom:1px solid #2a4a30;
+  }
+  .pss-item{
+    flex:1;display:flex;align-items:baseline;justify-content:center;
+    gap:5px;padding:9px 4px;border-right:1px solid #2a4a30;
+  }
+  .pss-item:last-child{border-right:none;}
+  .pss-label{font-size:12px;color:#a3abbd;font-weight:600;}
+  .pss-value{font-size:15px;font-weight:800;color:var(--text);}
+  .pss-paid{color:var(--green);}
+  .pss-pending{color:var(--pending-orange);}
+  .pss-unpaid{color:var(--coral);}
   .date-bar{
     display:flex;align-items:center;justify-content:center;gap:10px;
-    padding:7px 14px;background:#000000;
+    padding:8px 14px;background:#000000;
     border-top:1px solid #5a6272;
     border-bottom:1px solid #5a6272;
   }
   .arrow-btn{
-    width:36px;height:36px;border-radius:10px;border:none;background:var(--blue);
+    width:30px;height:30px;border-radius:10px;border:none;background:var(--blue);
     color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;
   }
   .arrow-btn svg{width:16px;height:16px;}
@@ -163,7 +176,7 @@
 
   .view-row{
     display:flex;align-items:center;justify-content:space-evenly;gap:10px;
-    padding:8px 14px;flex-wrap:wrap;row-gap:8px;
+    padding:5px 14px;flex-wrap:wrap;row-gap:8px;
   }
   .view-select{display:flex;align-items:center;gap:6px;color:#a3adc2;font-size:14px;font-weight:600;order:1;}
   .row-label{color:#a3adc2;font-size:14px;font-weight:600;}
@@ -733,6 +746,12 @@
 <div class="app">
 
   <div id="transactionsView">
+    <div class="period-status-strip">
+      <div class="pss-item"><span class="pss-label">Paid</span><span class="pss-value pss-paid" id="pssPaid">$0.00</span></div>
+      <div class="pss-item"><span class="pss-label">Pending</span><span class="pss-value pss-pending" id="pssPending">$0.00</span></div>
+      <div class="pss-item"><span class="pss-label">Unpaid</span><span class="pss-value pss-unpaid" id="pssUnpaid">$0.00</span></div>
+      <div class="pss-item"><span class="pss-label">Left</span><span class="pss-value" id="pssLeft">$0.00</span></div>
+    </div>
     <div class="date-bar">
       <button class="arrow-btn" id="prevBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
       <div class="range-label-clip" id="rangeLabelClip"><div class="range-label" id="rangeLabel">–</div></div>
@@ -4390,6 +4409,13 @@ var qrcode = function() {
       delete affirmOutstandingFlagEl.dataset.amount;
     }
 
+    const paidTotal = bills.filter(t => t.status === "paid").reduce((s,t) => s + t.amount, 0);
+    const pendingTotal = bills.filter(t => t.status === "pending").reduce((s,t) => s + t.amount, 0);
+    const unpaidTotal = bills.filter(t => t.status === "unpaid").reduce((s,t) => s + t.amount, 0);
+    $("#pssPaid").textContent = fmtMoney(paidTotal);
+    $("#pssPending").textContent = fmtMoney(pendingTotal);
+    $("#pssUnpaid").textContent = fmtMoney(unpaidTotal);
+
     const bal = getBankBalance();
     const remainingEl = $("#fRemaining");
     if(bal === null || bal === undefined || bal === ""){
@@ -4410,6 +4436,24 @@ var qrcode = function() {
       const affirmRemaining = Number(affirmBal) - affirmOutstanding;
       affirmRemainingEl.textContent = fmtMoney(affirmRemaining);
       affirmRemainingEl.className = "f-value amt " + (affirmRemaining < 0 ? "remaining-neg" : "remaining-pos");
+    }
+
+    // "Left" in the period status strip = combined remaining across whichever
+    // account balances are actually set (bank and/or Affirm).
+    let leftTotal = null;
+    if(bal !== null && bal !== undefined && bal !== ""){
+      leftTotal = (leftTotal || 0) + (Number(bal) - outstanding);
+    }
+    if(affirmBal !== null && affirmBal !== undefined && affirmBal !== ""){
+      leftTotal = (leftTotal || 0) + (Number(affirmBal) - affirmOutstanding);
+    }
+    const pssLeftEl = $("#pssLeft");
+    if(leftTotal === null){
+      pssLeftEl.textContent = "—";
+      pssLeftEl.className = "pss-value";
+    } else {
+      pssLeftEl.textContent = fmtMoney(leftTotal);
+      pssLeftEl.className = "pss-value " + (leftTotal < 0 ? "remaining-neg" : "remaining-pos");
     }
   }
 
