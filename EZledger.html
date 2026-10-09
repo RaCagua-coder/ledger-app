@@ -72,23 +72,57 @@
 
   /* Top bar */
   .topbar{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:6px 14px;
+    display:flex;align-items:center;justify-content:center;
+    padding:6px 9px;
     padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   }
   .icon-btn{
-    width:38px;height:38px;border-radius:10px;border:1px solid #4a7a53;
+    width:42px;height:42px;border-radius:10px;border:1px solid #4a7a53;
     background:#000000;display:flex;align-items:center;justify-content:center;
     color:#a3abbd;cursor:pointer;transition:background .15s, color .15s;
   }
   .icon-btn:active{background:var(--surface-2);}
-  .icon-btn svg{width:18px;height:18px;}
-  .topbar-actions{display:flex;gap:8px;}
+  .icon-btn svg{width:20px;height:20px;}
+  .topbar-actions{display:flex;gap:2px;}
   .brand{font-weight:800;font-size:17px;letter-spacing:-.01em;color:#4a7a53;}
+  .quick-add-wrap{position:relative;}
+  .quick-add-btn{background:#4a7a53;border-color:#4a7a53;color:#000;}
+  .quick-add-btn:active{filter:brightness(1.2);}
+  .quick-add-btn svg{width:20px;height:20px;}
+  .quick-add-menu{
+    position:absolute;bottom:48px;left:50%;transform:translateX(-50%) translateY(6px);
+    z-index:40;display:flex;flex-direction:column;gap:8px;
+    opacity:0;pointer-events:none;transition:opacity .15s ease,transform .15s ease;
+    background:#000000;border:1.5px solid #4a7a53;border-radius:10px;padding:9px;
+    box-shadow:0 4px 14px rgba(0,0,0,.4);
+  }
+  .quick-add-wrap.open .quick-add-menu{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);}
+  .quick-add-option{
+    display:flex;align-items:center;gap:8px;border:none;border-radius:8px;
+    padding:10px 20px;font-size:14.5px;font-weight:700;color:#fff;
+    cursor:pointer;font-family:inherit;white-space:nowrap;background:var(--coral);
+  }
+  .quick-add-option svg{width:15px;height:15px;flex:none;}
+  .quick-add-option.txn{background:#4a7a53;}
+  .quick-add-option:active{filter:brightness(1.2);}
+  .quick-sort-wrap{position:relative;}
+  .quick-sort-wrap .quick-add-menu{
+    left:auto;right:0;transform:translateY(6px);border-color:#4a7a53;
+  }
+  .quick-sort-wrap.open .quick-add-menu{opacity:1;pointer-events:auto;transform:translateY(0);}
+  .quick-sort-wrap .quick-add-menu{padding:9px;gap:8px;}
+  .quick-sort-wrap .list-filter-option{text-align:center;padding:9px 20px;font-size:14px;}
+  .quick-sort-wrap .list-filter-option.active{background:#4a7a53;color:#fff;}
+  .quick-filter-wrap{position:relative;}
+  .quick-filter-wrap .quick-add-menu{border-color:#4a7a53;}
+  .quick-filter-wrap.open .quick-add-menu{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);}
+  .quick-filter-wrap .quick-add-menu{padding:9px;gap:8px;}
+  .quick-filter-wrap .list-filter-option{text-align:center;padding:9px 20px;font-size:14px;}
+  .quick-filter-wrap .list-filter-option.active{background:#4a7a53;color:#fff;}
 
   /* Tabs */
   .icon-btn.active-view{background:var(--blue);border-color:var(--blue);color:#fff;}
-  #calendarBtn.active-view{background:#4a7a53;border-color:#4a7a53;}
+  #calendarBtn.active-view, #quickSortBtn.active-view, #billViewBtn.active-view{background:#4a7a53;border-color:#4a7a53;color:#fff;}
 
   #transactionsView{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;position:relative;}
   #calendarView{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
@@ -128,10 +162,11 @@
   }
 
   .view-row{
-    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    display:flex;align-items:center;justify-content:space-evenly;gap:10px;
     padding:8px 14px;flex-wrap:wrap;row-gap:8px;
   }
   .view-select{display:flex;align-items:center;gap:6px;color:#a3adc2;font-size:14px;font-weight:600;order:1;}
+  .row-label{color:#a3adc2;font-size:14px;font-weight:600;}
   .view-toggle{
     display:flex;align-items:center;justify-content:center;
     width:28px;height:24px;background:#000000;border:1.5px solid #4a7a53;
@@ -155,20 +190,11 @@
     background:var(--blue);color:#fff;border:none;width:17px;height:17px;border-radius:50%;
     font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;
   }
-  .pill-actions{display:flex;gap:8px;order:5;}
   .view-toggle-standalone{order:2;}
-  .pill{
-    border:none;border-radius:8px;padding:6px 9px;font-size:12px;font-weight:700;
-    display:flex;align-items:center;gap:3px;cursor:pointer;color:#000;font-family:inherit;
-  }
-  .pill svg{width:11px;height:11px;}
-  .bill-pill{background:var(--coral);}
-  .income-pill{background:var(--green);}
-  .misc-pill{background:#4a7a53;}
 
 
-  .list-filter-wrap{position:relative;order:2;}
-  .sort-by-wrap{position:relative;order:3;}
+  .list-filter-wrap{position:relative;order:2;display:flex;align-items:center;gap:6px;}
+  .sort-by-wrap{position:relative;order:3;display:flex;align-items:center;gap:6px;}
   .list-filter-menu{
     position:absolute;top:28px;left:0;z-index:40;display:flex;flex-direction:column;gap:6px;
     opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .15s ease,transform .15s ease;
@@ -188,8 +214,9 @@
     padding:7px 14px;font-weight:700;font-size:13px;letter-spacing:.02em;
     border-top:1px solid #2a4a30;border-bottom:1px solid #2a4a30;
   }
-  .tx-count-bar .paycheck-side{display:flex;align-items:center;gap:5px;cursor:pointer;}
-  .tx-count-bar .paycheck-side:active{opacity:0.6;}
+  .tx-count-bar{cursor:pointer;}
+  .tx-count-bar:active{opacity:0.6;}
+  .tx-count-bar .paycheck-side{display:flex;align-items:center;gap:5px;}
   .tx-count-bar .paycheck-side svg{width:13px;height:13px;flex:none;}
   #txCountBar{font-size:12px;}
 
@@ -302,7 +329,7 @@
   /* Footer */
   .footer{
     background:linear-gradient(180deg,#1c3524,#182b1e);border-top:1px solid #2a4a30;
-    padding:3px 6px 9px;
+    padding:3px 6px 7px;
   }
   .footer-row{display:flex;gap:1px;margin-bottom:3px;}
   .footer-row:last-child{margin-bottom:0;}
@@ -718,6 +745,7 @@
         <button class="view-toggle" id="viewToggle">1</button>
       </div>
       <div class="list-filter-wrap" id="listFilterWrap">
+        <span class="row-label">Bills/Txns:</span>
         <button type="button" class="view-toggle view-toggle-wide" id="listFilterToggle">All</button>
         <div class="list-filter-menu" id="listFilterMenu">
           <button type="button" class="list-filter-option" data-filter="all">All</button>
@@ -726,6 +754,7 @@
         </div>
       </div>
       <div class="sort-by-wrap" id="sortByWrap">
+        <span class="row-label">Sort:</span>
         <button type="button" class="sort-by-label" id="sortByLabel"></button>
         <div class="list-filter-menu" id="sortByMenu">
           <button type="button" class="list-filter-option" data-sortcycle="dueDate">Due Date</button>
@@ -733,19 +762,15 @@
           <button type="button" class="list-filter-option" data-sortcycle="tag">Tag</button>
         </div>
       </div>
-      <div class="pill-actions">
-        <button class="pill bill-pill" id="addBillBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Bill</button>
-        <button class="pill misc-pill" id="addTransactionBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Txn</button>
-      </div>
     </div>
 
-    <div class="tx-count-bar">
-      <span class="paycheck-side" id="paycheckJumpBtn" aria-label="Jump to current pay period">
+    <div class="tx-count-bar" id="txCountBarRow" aria-label="Jump to current pay period">
+      <span class="paycheck-side" id="paycheckJumpBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
         <span id="paycheckDateLabel">Paycheck –</span>
       </span>
-      <span id="todayDateBar"></span>
       <span id="txCountBar">BILLS  $0.00</span>
+      <span id="todayDateBar"></span>
     </div>
     <div class="tag-filter-chip" id="tagFilterChip" style="display:none;">
       <span id="tagFilterLabel">Filtering: </span>
@@ -789,25 +814,54 @@
   </footer>
 
   <div class="topbar">
-    <button class="icon-btn" id="sortBtn" aria-label="Sort and filter">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>
-    </button>
-    <div class="brand">EZLedger</div>
     <div class="topbar-actions">
-      <button class="icon-btn" id="calendarBtn" aria-label="Calendar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      </button>
-      <button class="icon-btn" id="calcBtn" aria-label="Calculator">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11.01"/><line x1="12" y1="11" x2="12" y2="11.01"/><line x1="16" y1="11" x2="16" y2="11.01"/><line x1="8" y1="15" x2="8" y2="15.01"/><line x1="12" y1="15" x2="12" y2="15.01"/><line x1="16" y1="15" x2="16" y2="18"/><line x1="8" y1="19" x2="12" y2="19.01"/></svg>
-      </button>
-      <button class="icon-btn" id="notepadBtn" aria-label="Notes">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
-      </button>
-      <button class="icon-btn" id="overviewHeaderBtn" aria-label="Overview">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+      <button class="icon-btn" id="sortBtn" aria-label="Sort and filter">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>
       </button>
       <button class="icon-btn" id="quickBackupBtn" aria-label="Download backup">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      </button>
+      <button class="icon-btn" id="calendarBtn" aria-label="Calendar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </button>
+      <div class="quick-filter-wrap" id="quickFilterWrap">
+        <button class="icon-btn quick-filter-btn" id="billViewBtn" aria-label="Bill view">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l3 3v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M9 9h6"/><path d="M9 13h6"/><path d="M9 17h3"/></svg>
+        </button>
+        <div class="quick-add-menu" id="quickFilterMenu">
+          <button type="button" class="list-filter-option" data-quickfilter="all">All</button>
+          <button type="button" class="list-filter-option" data-quickfilter="bills">Bills</button>
+          <button type="button" class="list-filter-option" data-quickfilter="txns">Txns</button>
+        </div>
+      </div>
+      <div class="quick-add-wrap" id="quickAddWrap">
+        <button class="icon-btn quick-add-btn" id="quickAddBtn" aria-label="Add bill or transaction">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <div class="quick-add-menu" id="quickAddMenu">
+          <button type="button" class="quick-add-option" id="quickAddBillBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Bill
+          </button>
+          <button type="button" class="quick-add-option txn" id="quickAddTxnBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Txn
+          </button>
+        </div>
+      </div>
+      <div class="quick-sort-wrap" id="quickSortWrap">
+        <button class="icon-btn quick-sort-btn" id="quickSortBtn" aria-label="Sort by">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h5"/><path d="M3 12h8"/><path d="M3 17h12"/><path d="M17 4v16"/><path d="M13 8l4-4 4 4"/></svg>
+        </button>
+        <div class="quick-add-menu" id="quickSortMenu">
+          <button type="button" class="list-filter-option" data-quicksort="dueDate">Due Date</button>
+          <button type="button" class="list-filter-option" data-quicksort="paid">Paid</button>
+          <button type="button" class="list-filter-option" data-quicksort="tag">Tag</button>
+        </div>
+      </div>
+      <button class="icon-btn" id="overviewHeaderBtn" aria-label="Overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+      <button class="icon-btn" id="calcBtn" aria-label="Calculator">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11.01"/><line x1="12" y1="11" x2="12" y2="11.01"/><line x1="16" y1="11" x2="16" y2="11.01"/><line x1="8" y1="15" x2="8" y2="15.01"/><line x1="12" y1="15" x2="12" y2="15.01"/><line x1="16" y1="15" x2="16" y2="18"/><line x1="8" y1="19" x2="12" y2="19.01"/></svg>
       </button>
       <button class="icon-btn" id="settingsBtn" aria-label="Settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
@@ -4447,6 +4501,12 @@ var qrcode = function() {
     $$(".list-filter-option[data-sortcycle]").forEach(btn => {
       btn.classList.toggle("active", btn.dataset.sortcycle === state.sort.by);
     });
+    $$(".list-filter-option[data-quicksort]").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.quicksort === state.sort.by);
+    });
+    $$(".list-filter-option[data-quickfilter]").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.quickfilter === state.listFilter);
+    });
     if(state.sort.by === "tag"){
       $("#sortByLabel").textContent = state.sort.tagValue ? ("Tag: " + state.sort.tagValue) : "Tag";
     } else {
@@ -4633,7 +4693,7 @@ var qrcode = function() {
     setTimeout(cleanup, 350);
   }
 
-  $("#paycheckJumpBtn").addEventListener("click", () => { jumpToCurrentPeriod(); });
+  $("#txCountBarRow").addEventListener("click", () => { jumpToCurrentPeriod(); });
   $("#prevBtn").addEventListener("click", () => { animatePeriodChange(-1); });
   $("#nextBtn").addEventListener("click", () => { animatePeriodChange(1); });
 
@@ -5387,8 +5447,74 @@ var qrcode = function() {
     if(e.target === $("#tagInputBox") || e.target === $("#tagChips")) $("#txTagEntry").focus();
   });
 
-  $("#addBillBtn").addEventListener("click", () => openTxEditor(null, "bill", "add"));
-  $("#addTransactionBtn").addEventListener("click", () => openTxEditor(null, "transaction", "add"));
+
+  const QUICK_MENU_WRAP_IDS = ["quickAddWrap","quickFilterWrap","quickSortWrap","sortByWrap","listFilterWrap"];
+  function closeAllQuickMenus(exceptId){
+    QUICK_MENU_WRAP_IDS.forEach(id => {
+      if(id === exceptId) return;
+      const el = $("#" + id);
+      if(el) el.classList.remove("open");
+    });
+    if(exceptId !== "quickFilterWrap") $("#billViewBtn").classList.remove("active-view");
+    if(exceptId !== "quickSortWrap") $("#quickSortBtn").classList.remove("active-view");
+  }
+
+  $("#quickAddBtn").addEventListener("click", () => {
+    const isOpen = !$("#quickAddWrap").classList.contains("open");
+    closeAllQuickMenus();
+    $("#quickAddWrap").classList.toggle("open", isOpen);
+  });
+  $("#quickAddBillBtn").addEventListener("click", () => {
+    $("#quickAddWrap").classList.remove("open");
+    openTxEditor(null, "bill", "add");
+  });
+  $("#quickAddTxnBtn").addEventListener("click", () => {
+    $("#quickAddWrap").classList.remove("open");
+    openTxEditor(null, "transaction", "add");
+  });
+
+  $("#billViewBtn").addEventListener("click", () => {
+    const isOpen = !$("#quickFilterWrap").classList.contains("open");
+    closeAllQuickMenus("quickFilterWrap");
+    $("#quickFilterWrap").classList.toggle("open", isOpen);
+    $("#billViewBtn").classList.toggle("active-view", isOpen);
+  });
+  $$("#quickFilterMenu [data-quickfilter]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      $("#quickFilterWrap").classList.remove("open");
+      $("#billViewBtn").classList.remove("active-view");
+      if(state.activeTab === "calendar") showView("transactions");
+      state.listFilter = btn.dataset.quickfilter;
+      renderAll();
+      save();
+    });
+  });
+
+  $("#quickSortBtn").addEventListener("click", () => {
+    const isOpen = !$("#quickSortWrap").classList.contains("open");
+    closeAllQuickMenus("quickSortWrap");
+    $("#quickSortWrap").classList.toggle("open", isOpen);
+    $("#quickSortBtn").classList.toggle("active-view", isOpen);
+  });
+  $$("#quickSortMenu [data-quicksort]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      $("#quickSortWrap").classList.remove("open");
+      $("#quickSortBtn").classList.remove("active-view");
+      applySortCycle(btn.dataset.quicksort);
+    });
+  });
+
+  // Close any open quick-menu popup when tapping elsewhere or scrolling the list.
+  document.addEventListener("click", (e) => {
+    const insideWrap = QUICK_MENU_WRAP_IDS.some(id => {
+      const el = $("#" + id);
+      return el && el.contains(e.target);
+    });
+    if(!insideWrap) closeAllQuickMenus();
+  }, true);
+  $$("#txList, #calendarView .cal-wrap").forEach(scrollHost => {
+    scrollHost.addEventListener("scroll", () => closeAllQuickMenus(), true);
+  });
 
   function openTxEditor(id, forcedTypeOrMode, modeIfId){
     let mode = "add";
@@ -5609,7 +5735,9 @@ var qrcode = function() {
     renderAll();
   }
   $("#sortByLabel").addEventListener("click", () => {
-    $("#sortByWrap").classList.toggle("open");
+    const isOpen = !$("#sortByWrap").classList.contains("open");
+    closeAllQuickMenus("sortByWrap");
+    $("#sortByWrap").classList.toggle("open", isOpen);
   });
   $$(".list-filter-option[data-sortcycle]").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -5618,7 +5746,9 @@ var qrcode = function() {
     });
   });
   $("#listFilterToggle").addEventListener("click", () => {
-    $("#listFilterWrap").classList.toggle("open");
+    const isOpen = !$("#listFilterWrap").classList.contains("open");
+    closeAllQuickMenus("listFilterWrap");
+    $("#listFilterWrap").classList.toggle("open", isOpen);
   });
   $$(".list-filter-option[data-filter]").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -6343,11 +6473,13 @@ var qrcode = function() {
     state.notepad = $("#notepadText").value;
     save();
   }
-  $("#notepadBtn").addEventListener("click", () => {
-    $("#notepadText").value = state.notepad || "";
-    openSheet("notepadOverlay");
-    setTimeout(() => $("#notepadText").focus(), 60);
-  });
+  if($("#notepadBtn")){
+    $("#notepadBtn").addEventListener("click", () => {
+      $("#notepadText").value = state.notepad || "";
+      openSheet("notepadOverlay");
+      setTimeout(() => $("#notepadText").focus(), 60);
+    });
+  }
   $("#notepadText").addEventListener("input", () => {
     // Debounce so every keystroke doesn't hit localStorage.
     if(notepadSaveTimer) clearTimeout(notepadSaveTimer);
