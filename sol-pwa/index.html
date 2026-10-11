@@ -4690,14 +4690,14 @@ var qrcode = function() {
     const maxHP = Number(getHpMax());
 
     const { start, end } = displayRange();
-    const hpToday = toDateOnly(new Date());
-    const isLivePeriod = start <= hpToday && hpToday <= end;
-    let periodBills = isLivePeriod
-      ? state.transactions.filter(t => toDateOnly(parseISO(t.date)) <= end)
-      : state.transactions.filter(t => {
-          const d = toDateOnly(parseISO(t.date));
-          return d >= start && d <= end;
-        });
+    // Unlike the "overdue backlog" views elsewhere in the app, the HP bar
+    // only reflects THIS period's own bills -- it's a snapshot of this
+    // period's Max HP taking damage from this period's spending, not a
+    // running total of every bill ever paid/owed across the app's history.
+    let periodBills = state.transactions.filter(t => {
+      const d = toDateOnly(parseISO(t.date));
+      return d >= start && d <= end;
+    });
     periodBills = periodBills.filter(t => (t.type === "bill" || t.type === "transaction") && !isAffirmTag(t.tags));
 
     const unpaidTotal = periodBills.filter(t => t.status === "unpaid").reduce((s,t) => s + Number(t.amount || 0), 0);
