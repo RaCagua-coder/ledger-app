@@ -4723,10 +4723,21 @@ var qrcode = function() {
 
     if(green < 0){
       wrap.classList.add("hp-critical");
-      const blackPct = Math.max(0, Math.min(100, (paidTotal / safeMax) * 100));
-      const redPct = Math.max(0, Math.min(100 - blackPct, (unpaidTotal / safeMax) * 100));
-      const yellowPct = Math.max(0, Math.min(100 - blackPct - redPct, (pendingYellowTotal / safeMax) * 100));
-      const ghostPct = Math.max(0, Math.min(100 - blackPct - redPct - yellowPct, (pendingOrangeTotal / safeMax) * 100));
+      // Over max: black/red/yellow/orange together would add up to more
+      // than 100% of the bar. Scale all four down proportionally (instead
+      // of letting black claim its full share first and squeeze the rest
+      // into whatever's left) so the bar still reflects their real dollar
+      // ratio to each other rather than reading as solid black.
+      const rawBlack = (paidTotal / safeMax) * 100;
+      const rawRed = (unpaidTotal / safeMax) * 100;
+      const rawYellow = (pendingYellowTotal / safeMax) * 100;
+      const rawGhost = (pendingOrangeTotal / safeMax) * 100;
+      const rawTotal = rawBlack + rawRed + rawYellow + rawGhost;
+      const scale = rawTotal > 100 ? 100 / rawTotal : 1;
+      const blackPct = Math.max(0, rawBlack * scale);
+      const redPct = Math.max(0, rawRed * scale);
+      const yellowPct = Math.max(0, rawYellow * scale);
+      const ghostPct = Math.max(0, rawGhost * scale);
       fillEl.style.width = "0%";
       blackEl.style.width = blackPct + "%";
       redEl.style.width = redPct + "%";
