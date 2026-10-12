@@ -6317,7 +6317,7 @@ var qrcode = function() {
     try{
       const dataStr = JSON.stringify(state, null, 2);
       const stamp = fmtISO(new Date());
-      const filename = "ledger-backup-" + stamp + ".json";
+      const filename = "ezledger-backup-" + stamp + ".json";
 
       // On iOS this opens the native Share Sheet directly, with "Save to
       // Files" right there — fewer taps than the old download-then-share flow.
