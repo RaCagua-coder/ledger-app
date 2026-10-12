@@ -4805,7 +4805,7 @@ var qrcode = function() {
       redEl.style.width = redPct + "%";
       yellowEl.style.width = yellowPct + "%";
       ghostEl.style.width = ghostPct + "%";
-      fillEl.classList.toggle("hp-low", maxHP > 0 && (green / safeMax) < 0.25);
+      fillEl.classList.remove("hp-low");
     }
 
     $("#hpCurrentLabel").textContent = fmtMoney(green);
