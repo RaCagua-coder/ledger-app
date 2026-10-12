@@ -4044,6 +4044,20 @@ var qrcode = function() {
     }
   }
 
+  // Undoes the balance/Max HP bump an Income entry made when it was added
+  // (see the txSaveBtn "income" branch). Every delete path has to call this
+  // before actually removing the transaction, or the bump stays counted
+  // forever even after the entry that justified it is gone. Safe to call
+  // on a non-income transaction or one with no hpPeriodISO -- does nothing.
+  function rollBackIncomeBump(t){
+    if(!t || t.type !== "income" || !t.hpPeriodISO) return;
+    const amt = Number(t.amount || 0);
+    const bal = state.bankBalances[t.hpPeriodISO];
+    if(bal !== undefined && bal !== null) state.bankBalances[t.hpPeriodISO] = Number(bal) - amt;
+    const hpMax = state.hpMaxByPeriod[t.hpPeriodISO];
+    if(hpMax !== undefined && hpMax !== null) state.hpMaxByPeriod[t.hpPeriodISO] = Number(hpMax) - amt;
+  }
+
   // Affirm Account — same per-period behavior as Bank Balance: it does not
   // carry over from one pay period to the next.
   let scratchAffirmBalance = null;
@@ -5346,11 +5360,18 @@ var qrcode = function() {
       });
     } else if(action === "deleteSeries"){
       showConfirm("Delete the entire series? This removes every occurrence, past and future.", () => {
+        // Same Income rollback as a single delete, applied to every
+        // occurrence in the series that actually bumped a period (only the
+        // one entered originally should have hpPeriodISO set).
+        state.transactions
+          .filter(x => x.seriesId === t.seriesId)
+          .forEach(rollBackIncomeBump);
         state.transactions = state.transactions.filter(x => x.seriesId !== t.seriesId);
         renderAll();
       });
     } else if(action === "delete"){
       showConfirm("Delete this transaction?", () => {
+        rollBackIncomeBump(t);
         state.transactions = state.transactions.filter(x => x.id !== t.id);
         renderAll();
       });
@@ -6055,16 +6076,7 @@ var qrcode = function() {
     if(!editingId){ closeSheet("txOverlay"); return; }
     showConfirm("Delete this transaction?", () => {
       const t = state.transactions.find(x => x.id === editingId);
-      // Deleting an Income entry has to undo the balance/Max HP bump it
-      // made when it was added -- otherwise that money stays counted
-      // forever even after the entry that justified it is gone.
-      if(t && t.type === "income" && t.hpPeriodISO){
-        const amt = Number(t.amount || 0);
-        const bal = state.bankBalances[t.hpPeriodISO];
-        if(bal !== undefined && bal !== null) state.bankBalances[t.hpPeriodISO] = Number(bal) - amt;
-        const hpMax = state.hpMaxByPeriod[t.hpPeriodISO];
-        if(hpMax !== undefined && hpMax !== null) state.hpMaxByPeriod[t.hpPeriodISO] = Number(hpMax) - amt;
-      }
+      rollBackIncomeBump(t);
       state.transactions = state.transactions.filter(t => t.id !== editingId);
       closeSheet("txOverlay");
       renderAll();
