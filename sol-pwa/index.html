@@ -3889,6 +3889,7 @@ var qrcode = function() {
       bankBalances: {},
       affirmBalances: {},
       hpMaxByPeriod: {},
+      hpAutoSeedMigrated: false,
       currentStartISO: null,
       calMonthISO: fmtISO(new Date(today.getFullYear(), today.getMonth(), 1)),
       viewMonthISO: null,
@@ -3913,6 +3914,21 @@ var qrcode = function() {
         }
         if(!merged.hpMaxByPeriod || typeof merged.hpMaxByPeriod !== "object" || Array.isArray(merged.hpMaxByPeriod)){
           merged.hpMaxByPeriod = {};
+        }
+        // One-time migration: Max HP used to auto-seed itself from whatever
+        // the balance field said the first time a period was viewed. That's
+        // gone now -- Max HP only ever comes from a deliberate Income entry
+        // (or a carryover transfer). Any already-auto-seeded snapshot for a
+        // period later than the one happening right now was never backed by
+        // an actual income entry, so it gets cleared once, forcing those
+        // periods to build their Max HP from income going forward. The
+        // current/past periods' existing snapshots are left alone.
+        if(!merged.hpAutoSeedMigrated){
+          const cutoffISO = merged.currentStartISO || fmtISO(periodStartContaining(new Date()));
+          Object.keys(merged.hpMaxByPeriod).forEach(k => {
+            if(k > cutoffISO) delete merged.hpMaxByPeriod[k];
+          });
+          merged.hpAutoSeedMigrated = true;
         }
         if(parsed.listFilter !== "bills" && parsed.listFilter !== "txns" && parsed.billsOnly === true){
           merged.listFilter = "bills";
@@ -4176,23 +4192,28 @@ var qrcode = function() {
     const newCurrentBal = round2(Number(bal) - remaining);
     const note = "This period's " + acctName + " Remaining will become $0.00.";
     // Same rule as an Income entry: Max HP is a locked snapshot, so money
-    // landing in next period's balance only raises the HP bar if next
-    // period's snapshot already exists -- bump it explicitly here. If it
-    // hasn't been locked yet, leave it alone; updateHpBar() will seed it
-    // from the balance above (which already includes this carryover) the
-    // first time that period renders, so bumping here too would double it.
+    // landing in next period's balance only raises the HP bar if explicitly
+    // set/bumped here. If next period's snapshot doesn't exist yet, this
+    // carryover IS what establishes it now (no more auto-seed from the
+    // balance field).
     const nextHpMax = isAffirm ? null : state.hpMaxByPeriod[nextISO];
     const hadLockedNextHp = !isAffirm && nextHpMax !== undefined && nextHpMax !== null;
     showTransferConfirm(acctName, remaining, hasExisting ? Number(existing) : 0, newVal, note, () => {
       bag[currentISO] = newCurrentBal;
       bag[nextISO] = newVal;
-      if(hadLockedNextHp) state.hpMaxByPeriod[nextISO] = Number(nextHpMax) + remaining;
+      if(!isAffirm){
+        if(hadLockedNextHp) state.hpMaxByPeriod[nextISO] = Number(nextHpMax) + remaining;
+        else state.hpMaxByPeriod[nextISO] = remaining;
+      }
       renderAll();
       showGenericUndo("Transferred " + fmtMoney(remaining) + " to next period's " + acctName + " Balance.", () => {
         bag[currentISO] = bal;
         if(hasExisting) bag[nextISO] = existing;
         else delete bag[nextISO];
-        if(hadLockedNextHp) state.hpMaxByPeriod[nextISO] = nextHpMax;
+        if(!isAffirm){
+          if(hadLockedNextHp) state.hpMaxByPeriod[nextISO] = nextHpMax;
+          else delete state.hpMaxByPeriod[nextISO];
+        }
         renderAll();
       });
     });
@@ -4686,8 +4707,23 @@ var qrcode = function() {
     }
     wrap.style.display = "";
 
-    if(getHpMax() === null) setHpMax(Number(bankBal));
-    const maxHP = Number(getHpMax());
+    // Max HP no longer auto-seeds from the balance field -- it only comes
+    // from a deliberate Income entry (or a carryover transfer) for this
+    // period. Until one of those has happened this period, there's no Max
+    // HP yet, so there's nothing to draw a bar against.
+    const hpMaxRaw = getHpMax();
+    if(hpMaxRaw === null){
+      wrap.classList.remove("hp-critical");
+      $("#hpBarFill").style.width = "0%";
+      $("#hpBarYellow").style.width = "0%";
+      $("#hpBarGhost").style.width = "0%";
+      $("#hpBarRed").style.width = "0%";
+      $("#hpBarBlack").style.width = "0%";
+      $("#hpCurrentLabel").textContent = "$0.00";
+      $("#hpMaxLabel").textContent = "No income yet";
+      return;
+    }
+    const maxHP = Number(hpMaxRaw);
 
     const { start, end } = displayRange();
     // Unlike the "overdue backlog" views elsewhere in the app, the HP bar
@@ -6018,6 +6054,17 @@ var qrcode = function() {
   $("#txDeleteBtn").addEventListener("click", () => {
     if(!editingId){ closeSheet("txOverlay"); return; }
     showConfirm("Delete this transaction?", () => {
+      const t = state.transactions.find(x => x.id === editingId);
+      // Deleting an Income entry has to undo the balance/Max HP bump it
+      // made when it was added -- otherwise that money stays counted
+      // forever even after the entry that justified it is gone.
+      if(t && t.type === "income" && t.hpPeriodISO){
+        const amt = Number(t.amount || 0);
+        const bal = state.bankBalances[t.hpPeriodISO];
+        if(bal !== undefined && bal !== null) state.bankBalances[t.hpPeriodISO] = Number(bal) - amt;
+        const hpMax = state.hpMaxByPeriod[t.hpPeriodISO];
+        if(hpMax !== undefined && hpMax !== null) state.hpMaxByPeriod[t.hpPeriodISO] = Number(hpMax) - amt;
+      }
       state.transactions = state.transactions.filter(t => t.id !== editingId);
       closeSheet("txOverlay");
       renderAll();
@@ -6046,33 +6093,56 @@ var qrcode = function() {
       const repeatKey = $("#txRepeat").value;
       const everyXDays = repeatKey === "everyXDays" ? (parseInt($("#txEveryXDays").value,10) || 30) : null;
 
+      let newlyAddedIncomeTx = null;
       if(repeatKey !== "none"){
         const occurrences = generateSeriesOccurrences({ label, amount, date, description, status, type: editingType, repeatKey, everyXDays, tags, url });
         if(editingType === "income") occurrences.forEach(o => { o.status = "paid"; });
         state.transactions.push(...occurrences);
+        // Only the occurrence landing on the date just entered is the one
+        // that actually bumped the balance/Max HP -- that's the one that
+        // needs to remember which period it bumped, so deleting/editing it
+        // later can roll that bump back.
+        if(editingType === "income") newlyAddedIncomeTx = occurrences.find(o => o.date === date) || occurrences[0];
       } else {
-        state.transactions.push({ id: uid(), label, amount, date, description, status, type: editingType, repeat:"none", everyXDays:null, seriesId:null, tags, deducted:false, url });
+        const newTx = { id: uid(), label, amount, date, description, status, type: editingType, repeat:"none", everyXDays:null, seriesId:null, tags, deducted:false, url };
+        state.transactions.push(newTx);
+        if(editingType === "income") newlyAddedIncomeTx = newTx;
       }
       if(editingType === "income"){
         // Income lands immediately -- add it straight to this period's
         // balance. Only the occurrence you're adding right now counts; a
         // recurring income series doesn't add future occurrences' amounts
         // until they actually happen.
+        ensureCurrentStart();
+        const bumpPeriodISO = state.currentStartISO;
+        if(newlyAddedIncomeTx) newlyAddedIncomeTx.hpPeriodISO = bumpPeriodISO;
         const curBal = getBankBalance();
         setBankBalance((curBal === null || curBal === undefined ? 0 : Number(curBal)) + amount);
         // Max HP is a locked snapshot, not read live off the balance -- so
-        // an income entry has to bump it explicitly to count. If nothing's
-        // been locked yet for this period, leave it alone: updateHpBar()
-        // will seed the snapshot from the balance above (which already
-        // includes this income) the next time it renders, so adding here
-        // too would double-count it.
+        // an income entry has to set/bump it explicitly to count. If
+        // nothing's been locked yet for this period, this income entry IS
+        // what establishes Max HP (it no longer auto-seeds from the balance
+        // field), so start it here instead of leaving it for later.
         const curMax = getHpMax();
         if(curMax !== null) setHpMax(Number(curMax) + amount);
+        else setHpMax(amount);
       }
     } else if(txSheetMode === "edit"){
       const t = state.transactions.find(x => x.id === editingId);
       const repeatKey = (!t.seriesId) ? $("#txRepeat").value : "none";
+      const oldAmount = Number(t.amount || 0);
       Object.assign(t, { label, amount, date, description, tags, url });
+      // An Income entry's amount is baked into whatever period it bumped
+      // (t.hpPeriodISO) -- if the amount changes, carry the difference
+      // into that same period's balance/Max HP rather than leaving the
+      // old amount stranded there.
+      if(t.type === "income" && t.hpPeriodISO && amount !== oldAmount){
+        const delta = amount - oldAmount;
+        const bal = state.bankBalances[t.hpPeriodISO];
+        if(bal !== undefined && bal !== null) state.bankBalances[t.hpPeriodISO] = Number(bal) + delta;
+        const hpMax = state.hpMaxByPeriod[t.hpPeriodISO];
+        if(hpMax !== undefined && hpMax !== null) state.hpMaxByPeriod[t.hpPeriodISO] = Number(hpMax) + delta;
+      }
 
       if(!t.seriesId && repeatKey !== "none"){
         const everyXDays = repeatKey === "everyXDays" ? (parseInt($("#txEveryXDays").value,10) || 30) : null;
