@@ -661,8 +661,42 @@
     position:relative;height:10px;border-radius:5px;background:#1c2b20;border:1px solid #2a4a30;
     overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.7);
   }
-  .boss-hp-fill{height:100%;background:var(--coral);border-radius:5px 0 0 5px;transition:width .2s ease;}
+  .boss-hp-fill{position:absolute;top:0;left:0;height:100%;background:var(--coral);border-radius:5px 0 0 5px;transition:width .2s ease;}
+  /* Ghost: a light afterimage of the bar's PREVIOUS width, laid on top of
+     the already-dropped real fill. Snapped out to the old width the instant
+     the hit lands, then drained back down to the new width and faded out --
+     so the chunk of HP just lost visibly recedes instead of just vanishing. */
+  .boss-hp-ghost{
+    position:absolute;top:0;left:0;height:100%;background:rgba(255,255,255,.65);
+    border-radius:5px 0 0 5px;pointer-events:none;opacity:0;
+    transition:width 1s ease, opacity 1s ease;
+  }
   .boss-meta{font-size:10px;color:var(--text-faint);margin-top:3px;}
+  /* Attack flash: played on a transaction row the instant a payment lands
+     against it -- a quick shake + white/red strobe on the row's name, and
+     the same strobe on its HP bar if it has one, before the amount/balance
+     actually commits to its new (lower) value. */
+  @keyframes rowAttackShake{
+    0%,100%{transform:translateX(0);}
+    10%{transform:translateX(-5px);} 20%{transform:translateX(5px);}
+    30%{transform:translateX(-5px);} 40%{transform:translateX(5px);}
+    50%{transform:translateX(-4px);} 60%{transform:translateX(4px);}
+    70%{transform:translateX(-3px);} 80%{transform:translateX(3px);}
+    90%{transform:translateX(-1px);}
+  }
+  @keyframes rowAttackFlash{
+    0%,100%{color:inherit;}
+    10%,30%,50%,70%,90%{color:#ffffff;}
+    20%,40%,60%,80%{color:#ff3b3b;}
+  }
+  @keyframes hpFillAttackFlash{
+    0%,100%{background:var(--coral);}
+    10%,30%,50%,70%,90%{background:#ffffff;}
+    20%,40%,60%,80%{background:#ff2d2d;}
+  }
+  .tx-row.row-attacking{animation:rowAttackShake .95s ease-in-out;}
+  .tx-row.row-attacking .tx-label{animation:rowAttackFlash .95s steps(1,end);}
+  .tx-row.row-attacking .boss-hp-fill{animation:hpFillAttackFlash .95s steps(1,end);}
   .boss-manage-empty{padding:20px 4px;text-align:center;color:var(--text-faint);font-size:13px;}
   .tx-boss-meta{display:flex;align-items:center;gap:6px;}
   .tx-boss-name{font-size:11px;font-weight:700;color:var(--coral);flex:none;}
@@ -676,6 +710,31 @@
   .shop-pouch-row-icon svg{width:100%;height:100%;display:block;shape-rendering:crispEdges;}
   .shop-pouch-btn-icon{display:inline-flex;width:18px;height:18px;flex:none;}
   .shop-pouch-btn-icon svg{width:100%;height:100%;display:block;shape-rendering:crispEdges;}
+  /* A Boss-linked bill gets its boss's portrait riding next to the name,
+     the same slot the gold pouch uses for a Shop Envelope row, just a
+     touch smaller since a face reads fine at a smaller size than the
+     pouch's coin detail does. */
+  .boss-portrait-row-icon{
+    position:relative;
+    width:26px;height:26px;flex:none;margin-right:8px;align-self:center;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:6px;overflow:hidden;background:#1c1408;border:1px solid #3a2a10;
+  }
+  .boss-portrait-row-icon svg{width:100%;height:100%;display:block;shape-rendering:crispEdges;}
+  .boss-portrait-row-icon img{width:100%;height:100%;display:block;}
+  /* Same red/white strobe the name and HP bar get, overlaid on the face so
+     it blinks right along with the rest of the hit. */
+  .boss-portrait-row-icon::after{
+    content:"";position:absolute;inset:0;opacity:0;pointer-events:none;
+  }
+  .tx-row.row-attacking .boss-portrait-row-icon::after{
+    animation:avatarAttackFlash .95s steps(1,end);
+  }
+  @keyframes avatarAttackFlash{
+    0%,100%{opacity:0;background:#ffffff;}
+    10%,30%,50%,70%,90%{opacity:.8;background:#ffffff;}
+    20%,40%,60%,80%{opacity:.8;background:#ff2d2d;}
+  }
 
   /* ---- Shop Envelope ("The Teller") ---- */
   #shopOverlay .shop-sheet{display:flex;flex-direction:column;align-items:stretch;}
@@ -887,19 +946,34 @@
   }
   .hitfx-layer > *{position:absolute;}
 
-  /* Slash: a diagonal streak that sweeps across the screen */
+  /* Slash: a golden one-two combo swept across the paid row's own name --
+     the first streak punches in from the right, then a beat later the
+     second punches in from the left. */
   .hfx-slash{
-    top:50%;left:50%;width:140vmax;height:3px;
-    background:linear-gradient(90deg, transparent, #ffffff 15%, #00c700 50%, #ffffff 85%, transparent);
-    transform:translate(-50%,-50%) rotate(-28deg) scaleX(0);
-    transform-origin:center;box-shadow:0 0 18px 2px rgba(0,199,0,.8);
-    animation:hfxSlash .45s cubic-bezier(.2,.9,.3,1) forwards;
+    height:4px;
+    background:linear-gradient(90deg, transparent, #fff6d8 10%, #ffd84d 45%, #fff3c4 55%, #ffd84d 70%, transparent);
+    box-shadow:0 0 16px 3px rgba(255,205,60,.85);
   }
-  @keyframes hfxSlash{
-    0%{transform:translate(-50%,-50%) rotate(-28deg) scaleX(0);opacity:0;}
-    12%{opacity:1;}
-    55%{transform:translate(-50%,-50%) rotate(-28deg) scaleX(1);opacity:1;}
-    100%{transform:translate(-50%,-50%) rotate(-28deg) scaleX(1);opacity:0;}
+  .hfx-slash-a{
+    transform-origin:right center;transform:scaleX(0) rotate(7deg);
+    animation:hfxSlashA .34s cubic-bezier(.2,.9,.3,1) forwards;
+  }
+  @keyframes hfxSlashA{
+    0%{transform:scaleX(0) rotate(7deg);opacity:0;}
+    15%{opacity:1;}
+    65%{transform:scaleX(1) rotate(7deg);opacity:1;}
+    100%{transform:scaleX(1) rotate(7deg);opacity:0;}
+  }
+  .hfx-slash-b{
+    transform-origin:left center;transform:scaleX(0) rotate(-7deg);
+    opacity:0;animation:hfxSlashB .34s cubic-bezier(.2,.9,.3,1) forwards;
+    animation-delay:.17s;animation-fill-mode:backwards;
+  }
+  @keyframes hfxSlashB{
+    0%{transform:scaleX(0) rotate(-7deg);opacity:0;}
+    15%{opacity:1;}
+    65%{transform:scaleX(1) rotate(-7deg);opacity:1;}
+    100%{transform:scaleX(1) rotate(-7deg);opacity:0;}
   }
 
   /* Burst: radiating particles from the row that was paid */
@@ -4448,6 +4522,25 @@ var qrcode = function() {
     };
   }
 
+  // A bill/transaction can be linked to a Boss (the HP-bar debt tracker).
+  // Paying that bill should chip away at the Boss's own balance too --
+  // otherwise the HP bar just sits there forever, disconnected from every
+  // payment made against it.
+  function linkedBossFor(t){
+    const bossKey = t.seriesId || t.id;
+    return state.bosses.find(b => b.linkedKey && b.linkedKey === bossKey);
+  }
+  // deltaOut is "money that just left the account to pay this down" --
+  // the exact same delta already being subtracted from the real account
+  // balance. The boss's debt balance moves by that same amount so the HP
+  // bar and the real Outstanding figure never fall out of sync.
+  function adjustLinkedBossBalance(t, deltaOut){
+    if(!deltaOut) return;
+    const boss = linkedBossFor(t);
+    if(!boss) return;
+    boss.balance = round2(Number(boss.balance || 0) - deltaOut);
+  }
+
   // What to call one pay period in user-facing text. "Two Weeks" reads
   // naturally as "fortnight"; the other two lengths just use their own name.
   function periodNoun(cap){
@@ -4820,9 +4913,15 @@ var qrcode = function() {
         ? `<span class="acct-bar ${isAffirmTag(t.tags) ? "acct-bar-affirm" : "acct-bar-bank"}"></span>`
         : "";
       const shopEnvelope = isShopEnvelope(t);
+      // If this bill is linked to a Boss, its portrait rides next to the
+      // name the same way the gold pouch does for a Shop Envelope -- a
+      // visual tell of what kind of row this is before you even read it.
+      const bossKey = t.seriesId || t.id;
+      const linkedBoss = !shopEnvelope ? state.bosses.find(b => b.linkedKey && b.linkedKey === bossKey) : null;
       return `<div class="tx-row${menuOpen ? " menu-active" : ""}${shopEnvelope ? " tx-row-shop" : ""}" data-id="${t.id}">
         ${acctBarHTML}
         ${shopEnvelope ? ('<span class="shop-pouch-row-icon" title="Shop Envelope">' + shopPouchIconSVG() + '</span>') : ""}
+        ${linkedBoss ? ('<span class="boss-portrait-row-icon" title="' + escapeHtml(linkedBoss.name || "Boss") + '">' + bossPortraitSVG(linkedBoss) + '</span>') : ""}
         <div class="tx-main">
           <div class="tx-label ${amtClass}">${escapeHtml(t.label)}${t.seriesId ? `<span class="repeat-badge" title="${REPEAT_LABELS[t.repeat]||"Repeating"}">${REPEAT_ICON}</span>` : ""}${t.type === "transaction" ? `<span class="txn-badge">TXN</span>` : ""}</div>
           ${(() => {
@@ -4842,14 +4941,12 @@ var qrcode = function() {
             // If this bill is linked to a Boss, show its mini HP bar in
             // place of the usual tag chips -- the boss link is a stronger,
             // more specific signal than a tag, so it takes over this line.
-            const bossKey = t.seriesId || t.id;
-            const linkedBoss = state.bosses.find(b => b.linkedKey && b.linkedKey === bossKey);
             if(linkedBoss){
               const starting = Number(linkedBoss.startingBalance || 0);
               const bal = Number(linkedBoss.balance || 0);
               const pct = starting > 0 ? Math.max(0, Math.min(100, (bal / starting) * 100)) : 0;
               return `<div class="tx-meta-line tx-boss-meta">
-                <div class="boss-hp-track tx-boss-hp-track"><div class="boss-hp-fill" style="width:${pct}%;"></div></div>
+                <div class="boss-hp-track tx-boss-hp-track"><div class="boss-hp-fill" style="width:${pct}%;"></div><div class="boss-hp-ghost" data-ghost-for="${t.id}" style="width:0%;"></div></div>
                 <span class="tx-boss-balance">${fmtMoney(bal)}</span>
               </div>`;
             }
@@ -5958,6 +6055,42 @@ var qrcode = function() {
     }
   }
 
+  // Plays the row-attack shake/flash on a transaction row, then runs
+  // `onDone` (the actual state commit + re-render) once the animation
+  // finishes -- so the hit visibly lands before the name/HP bar/outstanding
+  // figure actually drop to their new values. If the row isn't currently
+  // rendered (filtered out of the visible period, etc.) there's nothing to
+  // animate, so just commit immediately.
+  function playRowAttackFx(id, onDone){
+    const row = document.querySelector('.tx-row[data-id="' + id + '"]');
+    if(!row){ onDone(); return; }
+    spawnHitFx(row);
+    row.classList.add("row-attacking");
+    setTimeout(() => {
+      row.classList.remove("row-attacking");
+      onDone();
+    }, 1000);
+  }
+
+  // Finds a just-rendered row's boss HP bar and plays the "ghost" drain:
+  // the real fill is already at its new (lower) width from this render, so
+  // snap a light overlay out to the OLD width right on top of it, then
+  // drain that overlay back down to the new width and fade it out over a
+  // second -- the lost chunk of HP visibly recedes instead of just vanishing.
+  function animateBossHpGhost(id, oldPct, newPct){
+    const ghost = document.querySelector('.boss-hp-ghost[data-ghost-for="' + id + '"]');
+    if(!ghost) return;
+    ghost.style.transition = "none";
+    ghost.style.opacity = "1";
+    ghost.style.width = Math.max(0, Math.min(100, oldPct)) + "%";
+    // Force layout so the instant snap-out above actually paints before the
+    // transitioned drain-down starts.
+    void ghost.offsetWidth;
+    ghost.style.transition = "";
+    ghost.style.width = Math.max(0, Math.min(100, newPct)) + "%";
+    ghost.style.opacity = "0";
+  }
+
   // Jumps a bill/transaction directly to any of the three non-"paid" states
   // from the quick status picker, doing the same balance math as the Pay
   // Confirm sheet but for the transaction's full amount (no partial entry
@@ -5982,17 +6115,30 @@ var qrcode = function() {
     const doApply = () => {
       const prevFields = { status: t.status, deducted: t.deducted, amount: t.amount };
       const slot = hasBalance ? captureBalanceSlot(t) : null;
-      if(hasBalance){
-        if(wasOut && !willBeOut) setBal(round2(Number(getBal()) + t.amount));
-        else if(!wasOut && willBeOut) setBal(round2(Number(getBal()) - t.amount));
-      }
+      let deltaOut = 0;
+      if(wasOut && !willBeOut) deltaOut = -t.amount;
+      else if(!wasOut && willBeOut) deltaOut = t.amount;
+      const boss = linkedBossFor(t);
+      const bossStarting = boss ? Number(boss.startingBalance || 0) : 0;
+      const bossOldPct = boss && bossStarting > 0 ? (Number(boss.balance || 0) / bossStarting) * 100 : null;
+      if(hasBalance && deltaOut !== 0) setBal(round2(Number(getBal()) - deltaOut));
+      adjustLinkedBossBalance(t, deltaOut);
       t.status = newStatus;
       t.deducted = newDeducted;
       renderAll();
+      if(boss && bossOldPct !== null){
+        const bossNewPct = bossStarting > 0 ? (Number(boss.balance || 0) / bossStarting) * 100 : 0;
+        animateBossHpGhost(id, bossOldPct, bossNewPct);
+      }
       showUndoToast(labelMsg, id, prevFields, slot);
     };
 
-    doApply();
+    // Only a transition that newly takes money out (unpaid/pending ->
+    // pending-deducted) is a real "attack" on the balance -- play the hit
+    // first and let it land before the row updates. Anything else (backing
+    // a payment out) just applies immediately.
+    if(!wasOut && willBeOut) playRowAttackFx(id, doApply);
+    else doApply();
   }
 
   // ---------- Payment confirm (pending -> paid) ----------
@@ -6003,70 +6149,41 @@ var qrcode = function() {
   }
 
   // ---------- Pay-off hit animations ----------
-  // Fired once a bill/transaction actually becomes "paid" — picks one of
-  // several variants at random so it doesn't feel the same every time.
-  function spawnHitFx(){
+  // Fired once a bill/transaction actually becomes "paid" -- a golden
+  // one-two combo swept across the paid row's own name: first streak in
+  // from the right, then a beat later the second in from the left. Sized
+  // and positioned to the row (falls back to a center-screen sweep if the
+  // row isn't on screen to measure).
+  function spawnHitFx(rowEl){
     const layer = document.getElementById("hitFxLayer");
     if(!layer) return;
-    const variant = Math.floor(Math.random() * 5);
-    const cx = window.innerWidth / 2;
-    const cy = window.innerHeight * 0.4;
-    const els = [];
+    const nameEl = rowEl ? (rowEl.querySelector(".tx-label") || rowEl) : null;
+    const rect = nameEl ? nameEl.getBoundingClientRect() : null;
 
-    if(variant === 0){
-      const el = document.createElement("div");
-      el.className = "hfx-slash";
-      layer.appendChild(el);
-      els.push(el);
-    } else if(variant === 1){
-      const count = 12;
-      for(let i = 0; i < count; i++){
-        const el = document.createElement("div");
-        el.className = "hfx-particle";
-        const angle = (Math.PI * 2 * i) / count + (Math.random() * 0.4 - 0.2);
-        const dist = 55 + Math.random() * 55;
-        el.style.left = cx + "px";
-        el.style.top = cy + "px";
-        el.style.setProperty("--dx", (Math.cos(angle) * dist) + "px");
-        el.style.setProperty("--dy", (Math.sin(angle) * dist) + "px");
-        layer.appendChild(el);
-        els.push(el);
+    const position = (el) => {
+      if(rect && rect.width > 0){
+        const pad = 18;
+        el.style.top = (rect.top + rect.height / 2) + "px";
+        el.style.left = (rect.left - pad) + "px";
+        el.style.width = (rect.width + pad * 2) + "px";
+      } else {
+        el.style.top = (window.innerHeight * 0.4) + "px";
+        el.style.left = "calc(50% - 35vmin)";
+        el.style.width = "70vmin";
       }
-    } else if(variant === 2){
-      const msgs = ["DEFEATED!", "PAID!", "VANQUISHED!", "CLEARED!", "SLAIN!"];
-      const el = document.createElement("div");
-      el.className = "hfx-ko";
-      el.textContent = msgs[Math.floor(Math.random() * msgs.length)];
-      layer.appendChild(el);
-      els.push(el);
-    } else if(variant === 3){
-      const count = 6;
-      for(let i = 0; i < count; i++){
-        const el = document.createElement("div");
-        el.className = "hfx-coin";
-        el.textContent = "$";
-        el.style.left = (cx - 40 + Math.random() * 80) + "px";
-        el.style.top = (cy - 20) + "px";
-        el.style.setProperty("--dx", (Math.random() * 50 - 25) + "px");
-        el.style.setProperty("--rot", (Math.random() * 60 - 30) + "deg");
-        el.style.animationDelay = (i * 0.04) + "s";
-        layer.appendChild(el);
-        els.push(el);
-      }
-    } else {
-      const flash = document.createElement("div");
-      flash.className = "hfx-shatter-flash";
-      layer.appendChild(flash);
-      els.push(flash);
-      const ring = document.createElement("div");
-      ring.className = "hfx-shatter-ring";
-      ring.style.left = cx + "px";
-      ring.style.top = cy + "px";
-      layer.appendChild(ring);
-      els.push(ring);
-    }
+    };
 
-    setTimeout(() => { els.forEach(el => el.remove()); }, 900);
+    const first = document.createElement("div");
+    first.className = "hfx-slash hfx-slash-a";
+    position(first);
+    layer.appendChild(first);
+
+    const second = document.createElement("div");
+    second.className = "hfx-slash hfx-slash-b";
+    position(second);
+    layer.appendChild(second);
+
+    setTimeout(() => { first.remove(); second.remove(); }, 900);
   }
 
   function openPayConfirm(id){
@@ -6119,26 +6236,45 @@ var qrcode = function() {
       const prevFields = { status: t.status, deducted: t.deducted, amount: t.amount };
       const balanceSlot = hasBalance ? captureBalanceSlot(t) : null;
 
-      if(hasBalance){
-        if(isPartialRemain){
-          setBal(round2(Number(getBal()) - (finalAmount - (wasOut ? t.amount : 0))));
-        } else if(wasOut && !willBeOut){
-          setBal(round2(Number(getBal()) + t.amount));
-        } else if(!wasOut && willBeOut){
-          setBal(round2(Number(getBal()) - finalAmount));
-        } else if(wasOut && willBeOut && finalAmount !== t.amount){
-          setBal(round2(Number(getBal()) - (finalAmount - t.amount)));
-        }
+      let deltaOut = 0;
+      if(isPartialRemain){
+        deltaOut = finalAmount - (wasOut ? t.amount : 0);
+      } else if(wasOut && !willBeOut){
+        deltaOut = -t.amount;
+      } else if(!wasOut && willBeOut){
+        deltaOut = finalAmount;
+      } else if(wasOut && willBeOut && finalAmount !== t.amount){
+        deltaOut = finalAmount - t.amount;
       }
-      t.amount = isPartialRemain ? round2(t.amount - finalAmount) : finalAmount;
-      t.status = newStatus;
-      t.deducted = newDeducted;
       const undoTxId = t.id;
+      const boss = linkedBossFor(t);
+      const bossStarting = boss ? Number(boss.startingBalance || 0) : 0;
+      const bossOldPct = boss && bossStarting > 0 ? (Number(boss.balance || 0) / bossStarting) * 100 : null;
+
+      const commit = () => {
+        if(hasBalance && deltaOut !== 0) setBal(round2(Number(getBal()) - deltaOut));
+        adjustLinkedBossBalance(t, deltaOut);
+        t.amount = isPartialRemain ? round2(t.amount - finalAmount) : finalAmount;
+        t.status = newStatus;
+        t.deducted = newDeducted;
+        renderAll();
+        if(boss && bossOldPct !== null){
+          const bossNewPct = bossStarting > 0 ? (Number(boss.balance || 0) / bossStarting) * 100 : 0;
+          animateBossHpGhost(undoTxId, bossOldPct, bossNewPct);
+        }
+        showUndoToast("Payment updated.", undoTxId, prevFields, balanceSlot);
+      };
+
+      // Close the sheet first so the row is visible underneath, then let
+      // the hit land on it -- shake, flash, HP bar blink -- before the
+      // amount/status actually commit to their new values.
       payConfirmTxId = null;
       closeSheet("payConfirmOverlay");
-      renderAll();
-      showUndoToast("Payment updated.", undoTxId, prevFields, balanceSlot);
-      if(newStatus === "paid") spawnHitFx();
+      if(deltaOut > 0){
+        playRowAttackFx(undoTxId, commit);
+      } else {
+        commit();
+      }
     });
   });
 
