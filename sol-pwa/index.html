@@ -344,6 +344,24 @@
     display:inline-block;margin-left:6px;font-size:9px;font-weight:800;letter-spacing:.03em;
     color:var(--misc);border:1px solid var(--misc);border-radius:3px;padding:0 4px;vertical-align:middle;
   }
+  /* Replaces the old plain "TXN" text badge -- a small version of the
+     transaction's monster face, same style/size family as the boss
+     portraits, sitting inline right after the name where "TXN" used to be. */
+  .txn-monster-badge{
+    position:relative;
+    display:inline-flex;align-items:center;justify-content:center;flex:none;
+    width:22px;height:22px;margin-left:6px;vertical-align:middle;
+    border-radius:5px;overflow:hidden;background:#1c1408;border:1px solid #3a2a10;
+  }
+  .txn-monster-badge svg{width:100%;height:100%;display:block;shape-rendering:crispEdges;}
+  /* Same red/white strobe the boss portraits get, so a paid Transaction's
+     monster face blinks right along with the name/HP-bar hit flash. */
+  .txn-monster-badge::after{
+    content:"";position:absolute;inset:0;opacity:0;pointer-events:none;
+  }
+  .tx-row.row-attacking .txn-monster-badge::after{
+    animation:avatarAttackFlash .95s steps(1,end);
+  }
   .repeat-badge svg{width:11px;height:11px;display:block;}
   .tx-meta-line{font-size:10.5px;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .tx-desc-part{color:var(--text-dim);}
@@ -735,6 +753,33 @@
     10%,30%,50%,70%,90%{opacity:.8;background:#ffffff;}
     20%,40%,60%,80%{opacity:.8;background:#ff2d2d;}
   }
+
+  /* ---- Random Encounter battle scene (Add Transaction) ---- */
+  .tx-battle-scene{margin:4px 0 14px;}
+  .tx-battle-arena{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    margin-top:10px;padding:16px 14px;border-radius:12px;
+    background:#11161d;border:1px solid var(--border);
+  }
+  .tx-battle-fighter{display:flex;flex-direction:column;align-items:center;gap:6px;width:40%;}
+  .tx-battle-portrait{
+    width:64px;height:64px;border-radius:8px;overflow:hidden;
+    background:#1c1408;border:1px solid #3a2a10;image-rendering:pixelated;
+  }
+  .tx-battle-portrait svg, .tx-battle-portrait img{width:100%;height:100%;display:block;shape-rendering:crispEdges;}
+  /* Sol's real avatar PNG has its own transparent cutout, so it gets no
+     boxed background/border like the monster -- just the character,
+     floating free and sized up since there's no frame competing for space. */
+  .tx-battle-portrait-sol{
+    width:92px;height:92px;background:none;border:none;border-radius:0;
+  }
+  .tx-battle-hp-track{position:relative;width:100%;height:8px;}
+  .tx-battle-fighter-label{font-size:11px;font-weight:800;letter-spacing:.03em;color:var(--text-dim);}
+  .tx-battle-vs{font-size:12px;font-weight:800;color:var(--text-faint);flex:none;}
+  .tx-battle-monster #txBattleAmountSlot{width:100%;}
+  .tx-battle-monster #txBattleAmountSlot .field{margin:0;}
+  .tx-battle-monster #txBattleAmountSlot label{display:none;}
+  #txBattleDateSlot .field{margin-bottom:12px;}
 
   /* ---- Shop Envelope ("The Teller") ---- */
   #shopOverlay .shop-sheet{display:flex;flex-direction:column;align-items:stretch;}
@@ -1584,8 +1629,8 @@
       </div>
     </div>
     <div class="tx-scroll-body">
-      <div class="field-row">
-        <div class="field">
+      <div class="field-row" id="amountDateRow">
+        <div class="field" id="txAmountFieldWrap">
           <label>Amount</label>
           <div style="display:flex;gap:8px;align-items:center;">
             <input type="number" inputmode="decimal" step="0.01" id="txAmount" placeholder="0.00" style="flex:1;">
@@ -1597,6 +1642,28 @@
         <div class="field" id="txDateWrap">
           <label>Date</label>
           <input type="date" id="txDate">
+        </div>
+      </div>
+
+      <!-- Random Encounter battle scene: shown in place of the Amount/Date
+           row only when adding a brand-new one-off Transaction. Date gets
+           relocated here (above the arena) and the Amount field's own home
+           relocates into the monster's side -- same DOM nodes, just moved,
+           so save logic never has to know this exists. -->
+      <div class="tx-battle-scene" id="txBattleScene" style="display:none;">
+        <div id="txBattleDateSlot"></div>
+        <div class="tx-battle-arena">
+          <div class="tx-battle-fighter tx-battle-sol">
+            <div class="tx-battle-portrait tx-battle-portrait-sol" id="txBattleSolPortrait"></div>
+            <div class="boss-hp-track tx-battle-hp-track"><div class="boss-hp-fill" id="txBattleSolHpFill" style="width:100%;background:#3fa9f5;"></div></div>
+            <span class="tx-battle-fighter-label">SOL</span>
+          </div>
+          <div class="tx-battle-vs">VS</div>
+          <div class="tx-battle-fighter tx-battle-monster">
+            <div class="tx-battle-portrait" id="txBattleMonsterPortrait"></div>
+            <span class="tx-battle-fighter-label">???</span>
+            <div id="txBattleAmountSlot"></div>
+          </div>
         </div>
       </div>
       <div class="field" id="repeatFieldWrap">
@@ -4923,7 +4990,7 @@ var qrcode = function() {
         ${shopEnvelope ? ('<span class="shop-pouch-row-icon" title="Shop Envelope">' + shopPouchIconSVG() + '</span>') : ""}
         ${linkedBoss ? ('<span class="boss-portrait-row-icon" title="' + escapeHtml(linkedBoss.name || "Boss") + '">' + bossPortraitSVG(linkedBoss) + '</span>') : ""}
         <div class="tx-main">
-          <div class="tx-label ${amtClass}">${escapeHtml(t.label)}${t.seriesId ? `<span class="repeat-badge" title="${REPEAT_LABELS[t.repeat]||"Repeating"}">${REPEAT_ICON}</span>` : ""}${t.type === "transaction" ? `<span class="txn-badge">TXN</span>` : ""}</div>
+          <div class="tx-label ${amtClass}">${escapeHtml(t.label)}${t.seriesId ? `<span class="repeat-badge" title="${REPEAT_LABELS[t.repeat]||"Repeating"}">${REPEAT_ICON}</span>` : ""}${t.type === "transaction" ? `<span class="txn-monster-badge" title="${escapeHtml(t.label || "Transaction")}">${monsterIconSVGForLabel(t.label)}</span>` : ""}</div>
           ${(() => {
             // A Shop Envelope shows how much gold is left this period
             // instead of the usual tag/description line -- same idea as
@@ -6533,6 +6600,54 @@ var qrcode = function() {
     scrollHost.addEventListener("scroll", () => closeAllQuickMenus(), true);
   });
 
+  // Random Encounter battle scene -- swaps the Amount/Date row for the
+  // fight-screen layout (and back again) by physically relocating the real
+  // Amount and Date fields into/out of the battle scene's slots. Nothing
+  // about save/edit logic has to know this exists since it's still the
+  // same #txAmount/#txDate inputs either way, just living somewhere else
+  // in the DOM for the moment.
+  function setTxBattleMode(active){
+    const scene = $("#txBattleScene");
+    const amountDateRow = $("#amountDateRow");
+    const amountFieldWrap = $("#txAmountFieldWrap");
+    const dateFieldWrap = $("#txDateWrap");
+    if(active){
+      $("#txBattleDateSlot").appendChild(dateFieldWrap);
+      $("#txBattleAmountSlot").appendChild(amountFieldWrap);
+      amountDateRow.style.display = "none";
+      scene.style.display = "";
+      $("#txBattleMonsterPortrait").innerHTML = randomMonsterSVG();
+      $("#txBattleSolPortrait").innerHTML = solPortraitSVG();
+      // A simple read of this period's safe-to-spend (green) HP against Max
+      // HP for Sol's own little bar -- same idea as the big bar up top, just
+      // a plain single-color fill rather than its full black/red/yellow
+      // breakdown, since this is flavor for the fight screen, not a report.
+      const hpMaxRaw = getHpMax();
+      let solPct = 100;
+      if(hpMaxRaw !== null){
+        const maxHP = Number(hpMaxRaw);
+        const safeMax = maxHP > 0 ? maxHP : 1;
+        const { start, end } = displayRange();
+        let periodBills = state.transactions.filter(t => {
+          const d = toDateOnly(parseISO(t.date));
+          return d >= start && d <= end;
+        });
+        periodBills = periodBills.filter(t => (t.type === "bill" || t.type === "transaction") && !isAffirmTag(t.tags));
+        const committed = periodBills
+          .filter(t => t.status === "paid" || t.status === "unpaid" || (t.status === "pending"))
+          .reduce((s,t) => s + Number(t.amount || 0), 0);
+        const green = maxHP - committed;
+        solPct = Math.max(0, Math.min(100, (green / safeMax) * 100));
+      }
+      $("#txBattleSolHpFill").style.width = solPct + "%";
+    } else {
+      amountDateRow.insertBefore(amountFieldWrap, amountDateRow.firstChild);
+      amountDateRow.appendChild(dateFieldWrap);
+      amountDateRow.style.display = "";
+      scene.style.display = "none";
+    }
+  }
+
   function openTxEditor(id, forcedTypeOrMode, modeIfId){
     let mode = "add";
     let forcedType = "bill";
@@ -6546,6 +6661,8 @@ var qrcode = function() {
     editingId = id;
     const t = id ? state.transactions.find(x => x.id === id) : null;
     editingType = t ? t.type : forcedType;
+
+    setTxBattleMode(mode === "add" && editingType === "transaction");
 
     const addTitleMap = { bill: "Add Bill", transaction: "Add Transaction", income: "Add Income" };
     const titleMap = { add: (addTitleMap[editingType] || "Add"), edit: "Edit", editSeries: "Edit Series" };
@@ -7284,6 +7401,149 @@ var qrcode = function() {
       });
     });
     return '<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">' + rects + '</svg>';
+  }
+
+  // Random-encounter monsters get their OWN pool, completely separate from
+  // BOSS_PORTRAIT_VARIANTS, so a one-off Transaction's monster can never be
+  // the same face as one of the real Bosses. Same 10x10 pixel-art technique
+  // for visual consistency, but distinct little-critter designs (slime,
+  // bat, rat, spider, imp, crab) rather than the bosses' humanoid look.
+  const ENCOUNTER_MONSTER_VARIANTS = [
+    // Slime -- green, drippy blob
+    { grid: [
+        [0,0,0,0,0,0,0,0,0,0],
+        [0,0,1,1,1,1,1,1,0,0],
+        [0,1,2,2,2,2,2,2,1,0],
+        [1,2,2,3,2,2,3,2,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [0,1,2,2,1,2,2,2,1,0],
+        [0,0,1,2,1,2,1,1,0,0],
+        [0,0,0,1,0,1,0,0,0,0]
+      ], colors: {1:"#0a2e0a",2:"#3fae4a",3:"#eafff0"} },
+    // Bat -- purple-black, wide wings
+    { grid: [
+        [1,0,0,0,0,0,0,0,0,1],
+        [1,1,0,1,1,1,1,0,1,1],
+        [1,2,1,2,2,2,2,1,2,1],
+        [0,1,2,2,2,2,2,2,1,0],
+        [0,0,1,2,3,3,2,1,0,0],
+        [0,0,1,2,2,2,2,1,0,0],
+        [0,1,2,4,2,2,4,2,1,0],
+        [0,1,1,2,2,2,2,1,1,0],
+        [0,0,0,1,1,1,1,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0]
+      ], colors: {1:"#120a1a",2:"#4a2e6b",3:"#ff3b3b",4:"#d8c9f0"} },
+    // Rat -- brown, pointy ears and whiskers
+    { grid: [
+        [1,0,0,1,1,1,1,0,0,1],
+        [0,1,1,2,2,2,2,1,1,0],
+        [0,1,2,2,2,2,2,2,1,0],
+        [1,2,2,3,2,2,3,2,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [4,2,2,2,5,5,2,2,2,4],
+        [0,1,2,2,5,5,2,2,1,0],
+        [0,1,2,2,2,2,2,2,1,0],
+        [0,0,1,2,2,2,2,1,0,0],
+        [0,0,0,1,1,1,1,0,0,0]
+      ], colors: {1:"#000",2:"#7a5a3a",3:"#fff",4:"#c9c9c9",5:"#2a1a0a"} },
+    // Spider -- grey body, many eyes, fangs
+    { grid: [
+        [0,1,0,0,1,1,0,0,1,0],
+        [1,1,1,1,1,1,1,1,1,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [1,2,3,3,2,2,3,3,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [1,2,2,4,4,4,4,2,2,1],
+        [1,2,4,5,4,4,5,4,2,1],
+        [0,1,2,2,2,2,2,2,1,0],
+        [0,0,1,1,1,1,1,1,0,0]
+      ], colors: {1:"#000",2:"#5a5a66",3:"#ff2d2d",4:"#1a1a1a",5:"#fff"} },
+    // Imp -- small horns, mischievous grin, orange-red
+    { grid: [
+        [1,0,0,0,0,0,0,0,0,1],
+        [0,1,1,1,1,1,1,1,1,0],
+        [0,1,2,2,2,2,2,2,1,0],
+        [1,2,2,3,2,2,3,2,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [1,2,2,4,4,4,4,2,2,1],
+        [1,2,4,4,5,5,4,4,2,1],
+        [0,1,2,2,4,4,2,2,1,0],
+        [0,0,1,2,2,2,2,1,0,0],
+        [0,0,0,1,1,1,1,0,0,0]
+      ], colors: {1:"#000",2:"#d9541f",3:"#ffe14d",4:"#5a0f0f",5:"#fff2c0"} },
+    // Crab -- shell with eyes on stalks, blue-teal
+    { grid: [
+        [0,1,0,0,0,0,0,0,1,0],
+        [0,1,0,1,1,1,1,0,1,0],
+        [0,0,1,2,2,2,2,1,0,0],
+        [1,1,2,2,2,2,2,2,1,1],
+        [1,2,2,3,2,2,3,2,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [0,1,2,2,2,2,2,2,1,0],
+        [1,1,0,1,1,1,1,0,1,1],
+        [1,0,0,0,0,0,0,0,0,1],
+        [0,0,0,0,0,0,0,0,0,0]
+      ], colors: {1:"#0a2a2e",2:"#2a9aa0",3:"#fff"} }
+  ];
+  function monsterVariantSVG(variant){
+    let rects = "";
+    variant.grid.forEach((row, r) => {
+      row.forEach((code, c) => {
+        if(code === 0) return;
+        rects += '<rect x="' + c + '" y="' + r + '" width="1" height="1" fill="' + variant.colors[code] + '"/>';
+      });
+    });
+    return '<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">' + rects + '</svg>';
+  }
+  // A fresh random monster for the Add Transaction "random encounter" battle
+  // scene -- picked from ENCOUNTER_MONSTER_VARIANTS above, never the boss
+  // pool, so it's never the same face as any real Boss and is never the
+  // same monster twice in a row.
+  function randomMonsterSVG(){
+    const variant = ENCOUNTER_MONSTER_VARIANTS[Math.floor(Math.random() * ENCOUNTER_MONSTER_VARIANTS.length)];
+    return monsterVariantSVG(variant);
+  }
+  // The small monster badge shown on a saved Transaction row (replacing the
+  // old plain "TXN" text) is picked deterministically from the transaction's
+  // NAME, not randomly -- so every "Publix" gets the same little face every
+  // time, every "Wawa" gets its own (possibly different) face every time,
+  // and the two don't have to differ from each other, just be consistent
+  // with themselves.
+  function monsterVariantForLabel(label){
+    const key = String(label || "").trim().toLowerCase();
+    if(!key) return ENCOUNTER_MONSTER_VARIANTS[0];
+    return ENCOUNTER_MONSTER_VARIANTS[hashSeed(key) % ENCOUNTER_MONSTER_VARIANTS.length];
+  }
+  function monsterIconSVGForLabel(label){
+    return monsterVariantSVG(monsterVariantForLabel(label));
+  }
+
+  // Sol's own pixel portrait for the battle scene -- same grid technique and
+  // scale as the boss portraits, but given the same level of specific detail
+  // (gold hood trim, a real pupil, a brow line) the bosses get, so he reads
+  // as an actual character -- "Sol" -- not just a generic blue hood.
+  const SOL_PORTRAIT_GRID = [
+    [0,0,1,1,1,1,1,1,0,0],
+    [0,1,2,2,5,5,2,2,1,0],
+    [1,2,2,2,2,2,2,2,2,1],
+    [1,2,3,3,3,3,3,3,2,1],
+    [1,2,3,4,6,6,4,3,2,1],
+    [1,2,3,3,7,7,3,3,2,1],
+    [1,2,2,3,3,3,3,2,2,1],
+    [0,1,2,2,5,5,2,2,1,0],
+    [0,0,1,2,2,2,2,1,0,0],
+    [0,0,0,1,1,1,1,0,0,0]
+  ];
+  const SOL_PORTRAIT_COLORS = {1:"#0a0a0a", 2:"#2a5fc7", 3:"#e8b98a", 4:"#ffffff", 5:"#f0c94d", 6:"#15233f", 7:"#1a3a7a"};
+  // Sol's REAL avatar -- the same PNG used as the app's home-screen icon
+  // (sol-pwa/manifest.json), pulled in so the battle screen shows the
+  // actual character instead of a separately-drawn pixel-art stand-in.
+  const SOL_AVATAR_IMG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD0eNT6AAAM1UlEQVR4nO3YsW7dZx3H4fdYpx4s7ArqFtOhMMFQqSPqVHWIECoKzGViQMoV0EQsiAUl5QbIBVBGhgiJoUJVpooxEgNsdAimiIGoikoS+TCwVUIm8nv8t/15ngv46ufk+Ojjd7V3uD8AgJadpQ8AAM6fAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAoPXSB3Cx7J28sJm9+Xjn6Wrm3mW4cRtm/9zb+Jkvw40HJ5upNz4buzPnxhiX4/PI5ecFAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAIAEAAEECAACCBAAABAkAAAha7R3uL30DF8jeyQubpW84zXo8WfqEU71y9NrSJyzi4fHx1L1t/F/P/r/59PiTqXvb8GhntVr6Bi4eLwAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgKD10gdwNgcnm83cxSdz58YYrxy9Nn1ztofHx0ufcO628TO/enQ0fXO2T48/mbq3jc/37Bvnf0+M8WhntZq9yfnyAgAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAErfYO95e+gTM4ONlsZu69cvTazDliHh4fL33CqdbjydS9y/A78+nxJ9M3H+2sVtNHOVdeAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQeulD+Bsno3dpU841cPj46l7rx4dTd3bhk+PP5m++crRa1P3tnHj7C+U2T/zGPM/j3BZeQEAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAglZ7h/tL38AZ7J28sFn6htOsx5Ope8/G7tS9qlePjqZvPjw+nrp3GW6c/fke43J8xh/vPF0tfQNn4wUAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABC0XvoALpaPbr05ffPt2x9P3dvGjUXXbt+fvjn7C+WDH31j8uIYY8zdnP35HmP+Z3wbN3L5eQEAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAgtZLH8DZrMeTpU+4El7/ye+WPuFUf/rl96bufXjrral7YzT/HS+D7XxPrLawyXnyAgAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACFovfQBn82zsTt17+/bHU/fGGOOjW29O37zoXvryy9M37//029M3Z3v5pZem7v3jn/+curcN2/h8z/89nPs98V9Pt7DJefICAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAStlz6As3m883Q1c+/gZLOZuTfGGNdu35+69+Gtt6bubcPuzudLn7CI9Xiy9Annbvbne4z5X8yPdlZTvye4GrwAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAIAEAAEECAACCVnuH+0vfAM/l4GSzmb354a23Zk9yQV27fX/pE071aGe1WvoGrj4vAAAQJAAAIEgAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAoNXe4f7SN3CBHJxsNkvfsIRnY3fq3no8mbo3xhgf3npr+uZs127fX/qEU7347teXPuFU//rNX6fuPdpZraYOciV4AQCAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAIAEAAEECAACC1ksfwNkcnGw2M/d+9cHvZ85txc17N6Zv3rl+d/rmbNd++N2lTzjVi+9+fere0Te/OnVvG/788z9O33zvjc+m7v3iwVemfk+MMcbjnaer2ZucLy8AABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAICg9dIHcPXdvHdj6RNONfvGO9fvTt3bhm/97NtLn7CIP//8j1P33nvjs6l7cF68AABAkAAAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABB66UPgOd15/rdpU/gfzj+y9+XPgH4P3kBAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAErZc+AJ7XzXs3lj7hVHeu3136hFP94Ld/mL75/oMvTd17743Ppu6NMcYvxlemb872nXfembr3/oP7U/f+a7WFTc6TFwAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgaL30AVx9d67fXfqEU928d2PpE87d3ddfn7754uTJrXxyHvxt6tx33nln6t42PBu7W1h9uoVNzpMXAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABA0HrpA7j6bt67sfQJV8KzsTt171+/+evUvcti9pfe27c/nrw4xke33py+CV/kBQAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAQJAAAIWu0d7i99AxfIwclmM3vzVx/8furezXs3pu6NMcad63en7v34h9+fujfGGC+9+7Xpm0X/+PXfp+7t7nw+dW8bHu2sVkvfwMXjBQAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAQJAAAIEgAAECQAACBIAABAkAAAgCABAABBAgAAggQAAAQJAAAIEgAAELTaO9xf+gauuIOTzWbpG87be298tvQJnJP3H3xp+uajndVq+ih8gRcAAAgSAAAQJAAAIEgAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIGi1d7i/9A3wXPZOXtgsfcNp1uPJ0ifwPzwbu1P3Tk7m/x31+frfq+mj8AVeAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQQIAAIIEAAAECQAACBIAABAkAAAgSAAAQJAAAIAgAQAAQeulD4Dn9Xjn6WrpG053CU7Mejp3zp9RXFI+ugAQJAAAIEgAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAIAEAAEECAACCBAAABAkAAAgSAAAQJAAAIEgAAECQAACAIAEAAEH/AfF7/UVh4HS4AAAAAElFTkSuQmCC";
+  function solPortraitSVG(){
+    return '<img src="' + SOL_AVATAR_IMG + '" alt="Sol" style="display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;">';
   }
 
   // Pixel-art coin pouch -- used in place of a plain shopping-cart emoji
