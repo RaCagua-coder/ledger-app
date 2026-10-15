@@ -351,7 +351,6 @@
     position:relative;
     display:inline-flex;align-items:center;justify-content:center;flex:none;
     width:22px;height:22px;margin-left:6px;vertical-align:middle;
-    border-radius:5px;overflow:hidden;background:#1c1408;border:1px solid #3a2a10;
   }
   .txn-monster-badge svg{width:100%;height:100%;display:block;shape-rendering:crispEdges;}
   /* Same red/white strobe the boss portraits get, so a paid Transaction's
@@ -666,8 +665,7 @@
   }
   .boss-row:last-child{border-bottom:none;}
   .boss-portrait{
-    flex:none;width:44px;height:44px;border-radius:8px;background:#1a0e0e;
-    border:2px solid #000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);
+    flex:none;width:44px;height:44px;
     image-rendering:pixelated;overflow:hidden;
   }
   .boss-portrait svg{display:block;width:100%;height:100%;shape-rendering:crispEdges;}
@@ -736,7 +734,6 @@
     position:relative;
     width:26px;height:26px;flex:none;margin-right:8px;align-self:center;
     display:flex;align-items:center;justify-content:center;
-    border-radius:6px;overflow:hidden;background:#1c1408;border:1px solid #3a2a10;
   }
   .boss-portrait-row-icon svg{width:100%;height:100%;display:block;shape-rendering:crispEdges;}
   .boss-portrait-row-icon img{width:100%;height:100%;display:block;}
@@ -763,15 +760,11 @@
   }
   .tx-battle-fighter{display:flex;flex-direction:column;align-items:center;gap:6px;width:40%;}
   .tx-battle-portrait{
-    width:64px;height:64px;border-radius:8px;overflow:hidden;
-    background:#1c1408;border:1px solid #3a2a10;image-rendering:pixelated;
+    width:86px;height:86px;image-rendering:pixelated;
   }
   .tx-battle-portrait svg, .tx-battle-portrait img{width:100%;height:100%;display:block;shape-rendering:crispEdges;}
-  /* Sol's real avatar PNG has its own transparent cutout, so it gets no
-     boxed background/border like the monster -- just the character,
-     floating free and sized up since there's no frame competing for space. */
   .tx-battle-portrait-sol{
-    width:92px;height:92px;background:none;border:none;border-radius:0;
+    width:92px;height:92px;
   }
   .tx-battle-hp-track{position:relative;width:100%;height:8px;}
   .tx-battle-fighter-label{font-size:11px;font-weight:800;letter-spacing:.03em;color:var(--text-dim);}
@@ -990,6 +983,32 @@
     position:fixed;inset:0;z-index:999;pointer-events:none;overflow:hidden;
   }
   .hitfx-layer > *{position:absolute;}
+
+  /* ---------- Random-encounter screen transition ---------- */
+  /* Retro "pixel dissolve": the screen breaks apart into a grid of blocky
+     tiles that pop in (in a random stagger, so coverage spreads unevenly
+     rather than fading smoothly) until the whole screen is covered, then
+     pop back out in a different random order to reveal the Encounter
+     sheet, already open underneath. Each tile is a flat chunk of the
+     game's own palette (dark bg plus gold/green accents) so it reads as
+     part of the same world instead of a generic loading effect. */
+  .encounter-flash{
+    position:fixed;inset:0;z-index:10000;pointer-events:none;
+    display:grid;
+    grid-template-columns:repeat(var(--cols, 16), 1fr);
+    grid-template-rows:repeat(var(--rows, 30), 1fr);
+  }
+  .encounter-flash .pixel{opacity:0;}
+  .encounter-flash.active .pixel{
+    animation:pixelDissolve .5s steps(1,end) forwards;
+    animation-delay:var(--d, 0s);
+  }
+  @keyframes pixelDissolve{
+    0%{opacity:0;}
+    26%{opacity:1;}
+    68%{opacity:1;}
+    100%{opacity:0;}
+  }
 
   /* Slash: a golden one-two combo swept across the paid row's own name --
      the first streak punches in from the right, then a beat later the
@@ -1227,7 +1246,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Bill
           </button>
           <button type="button" class="quick-add-option txn" id="quickAddTxnBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Txn
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Encounter
           </button>
           <button type="button" class="quick-add-option income" id="quickAddIncomeBtn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Income
@@ -1781,6 +1800,11 @@
 </div>
 
 <div class="hitfx-layer" id="hitFxLayer"></div>
+
+<!-- Old-school "random encounter" screen transition -- a quick white flash
+     burst that plays right as the Encounter sheet opens, like stepping on
+     an enemy tile in a classic JRPG overworld. -->
+<div class="encounter-flash" id="encounterFlash"></div>
 
 <!-- QR Code Dialog -->
 <div class="overlay" id="qrOverlay">
@@ -6550,7 +6574,7 @@ var qrcode = function() {
   });
   $("#quickAddTxnBtn").addEventListener("click", () => {
     $("#quickAddWrap").classList.remove("open");
-    openTxEditor(null, "transaction", "add");
+    triggerEncounterTransition(() => openTxEditor(null, "transaction", "add"));
   });
   $("#quickAddIncomeBtn").addEventListener("click", () => {
     $("#quickAddWrap").classList.remove("open");
@@ -6606,6 +6630,54 @@ var qrcode = function() {
   // about save/edit logic has to know this exists since it's still the
   // same #txAmount/#txDate inputs either way, just living somewhere else
   // in the DOM for the moment.
+  const ENCOUNTER_PIXEL_COLORS = ["#05140a", "#0c2412", "#f0c94d", "#3fae4a"];
+  const ENCOUNTER_PIXEL_WEIGHTS = [0.52, 0.28, 0.1, 0.1];
+  function pickEncounterPixelColor(){
+    const r = Math.random();
+    let acc = 0;
+    for(let i = 0; i < ENCOUNTER_PIXEL_WEIGHTS.length; i++){
+      acc += ENCOUNTER_PIXEL_WEIGHTS[i];
+      if(r <= acc) return ENCOUNTER_PIXEL_COLORS[i];
+    }
+    return ENCOUNTER_PIXEL_COLORS[0];
+  }
+  // Builds the pixel-dissolve tile grid once (lazily, on first use) and
+  // reuses it on every later trigger -- each tile already carries its own
+  // random color + stagger delay as inline style, so re-triggering is just
+  // restarting the CSS animation, no DOM rebuild needed.
+  function buildEncounterPixelGrid(){
+    const flash = $("#encounterFlash");
+    if(!flash || flash.dataset.built) return;
+    const cols = 16, rows = 30;
+    flash.style.setProperty("--cols", cols);
+    flash.style.setProperty("--rows", rows);
+    const frag = document.createDocumentFragment();
+    for(let i = 0; i < cols * rows; i++){
+      const cell = document.createElement("div");
+      cell.className = "pixel";
+      cell.style.background = pickEncounterPixelColor();
+      cell.style.setProperty("--d", (Math.random() * 0.1).toFixed(3) + "s");
+      frag.appendChild(cell);
+    }
+    flash.appendChild(frag);
+    flash.dataset.built = "1";
+  }
+  // Plays the full-screen "random encounter" pixel-dissolve transition,
+  // then calls onReveal partway through -- right when the tile stagger
+  // guarantees full coverage -- so the Encounter sheet is already open
+  // underneath by the time the tiles pop back out, same as a JRPG cutting
+  // straight to the battle screen.
+  function triggerEncounterTransition(onReveal){
+    const flash = $("#encounterFlash");
+    if(!flash){ onReveal(); return; }
+    buildEncounterPixelGrid();
+    flash.classList.remove("active");
+    void flash.offsetWidth;
+    flash.classList.add("active");
+    setTimeout(onReveal, 260);
+    setTimeout(() => { flash.classList.remove("active"); }, 650);
+  }
+
   function setTxBattleMode(active){
     const scene = $("#txBattleScene");
     const amountDateRow = $("#amountDateRow");
@@ -6664,7 +6736,7 @@ var qrcode = function() {
 
     setTxBattleMode(mode === "add" && editingType === "transaction");
 
-    const addTitleMap = { bill: "Add Bill", transaction: "Add Transaction", income: "Add Income" };
+    const addTitleMap = { bill: "Add Bill", transaction: "Random Encounter", income: "Add Income" };
     const titleMap = { add: (addTitleMap[editingType] || "Add"), edit: "Edit", editSeries: "Edit Series" };
     $("#txSheetTitle").textContent = titleMap[mode];
 
