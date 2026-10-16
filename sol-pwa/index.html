@@ -5910,7 +5910,22 @@ var qrcode = function() {
 
   $("#bankBalanceInput").addEventListener("input", (e) => {
     const v = e.target.value.replace(/[$,]/g, "");
-    setBankBalance(v === "" ? null : Number(v));
+    const oldBal = getBankBalance();
+    const newBal = v === "" ? null : Number(v);
+    setBankBalance(newBal);
+    // A correction to the balance (fixing a typo, reflecting money moved
+    // between accounts) should move the HP bar too, not just the
+    // Remaining/Left numbers -- so nudge this period's Max HP snapshot by
+    // the exact same delta, same as if the correction had always been
+    // there. Only applies once Max HP actually exists for the period
+    // (still seeded only by a deliberate Income entry) and only for the
+    // real current-period balance, not a scratch/preview value.
+    if(state.viewMode === "1" && oldBal !== null && oldBal !== undefined && newBal !== null){
+      const hpMaxRaw = getHpMax();
+      if(hpMaxRaw !== null){
+        setHpMax(round2(Number(hpMaxRaw) + (Number(newBal) - Number(oldBal))));
+      }
+    }
     renderFooter();
     save();
   });
