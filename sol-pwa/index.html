@@ -792,6 +792,17 @@
     width:100%;max-width:220px;text-align:center;font-size:20px;font-weight:700;
     padding:10px;border-radius:8px;border:2px solid #7a5a1f;background:#0d0a04;color:var(--text);margin-bottom:14px;
   }
+  /* "Sell items back" -- a refund box under the spend box, for undoing a
+     Teller purchase: whatever gold you type here goes back onto the
+     envelope's remaining gold AND back onto the real account balance,
+     the exact mirror of what Check Out does. */
+  .shop-sell-row{
+    width:100%;max-width:220px;margin:0 auto 14px;padding-top:12px;
+    border-top:1px dashed #7a5a1f;
+  }
+  .shop-sell-input-row{display:flex;gap:8px;align-items:stretch;}
+  .shop-sell-input-row .shop-sell-input{flex:1;margin-bottom:0;}
+  .shop-sell-btn{flex:none;padding:0 16px;font-size:13px;}
   .shop-thanks-toast{
     position:fixed;left:50%;top:50%;z-index:140;
     transform:translate(-50%,-50%) scale(.85);
@@ -1756,6 +1767,13 @@
         <label class="shop-spend-label">How much did you spend?</label>
         <input type="number" inputmode="decimal" step="0.01" id="shopSpendInput" class="shop-spend-input" placeholder="0.00">
       </div>
+      <div id="shopSellRow" class="shop-sell-row">
+        <label class="shop-spend-label">Sell items back -- how much gold?</label>
+        <div class="shop-sell-input-row">
+          <input type="number" inputmode="decimal" step="0.01" id="shopSellInput" class="shop-spend-input shop-sell-input" placeholder="0.00">
+          <button type="button" class="btn ghost shop-sell-btn" id="shopSellBtn">Sell</button>
+        </div>
+      </div>
     </div>
     <div class="btn-row">
       <button class="btn ghost" id="shopCloseBtn">Close</button>
@@ -1766,7 +1784,7 @@
 
 <!-- Shop checkout confirmation popup -->
 <div class="shop-thanks-toast" id="shopThanksToast">
-  <span class="shop-thanks-coin">&#9679;</span> Thank you, come again.
+  <span class="shop-thanks-coin">&#9679;</span> <span id="shopThanksMsg">Thank you, come again.</span>
 </div>
 
 <!-- Floating Calculator -->
@@ -5521,8 +5539,9 @@ var qrcode = function() {
   $("#shopCloseBtn").addEventListener("click", closeShopOverlay);
 
   let shopThanksTimer = null;
-  function showShopThanksToast(){
+  function showShopThanksToast(message){
     const el = $("#shopThanksToast");
+    $("#shopThanksMsg").textContent = message || "Thank you, come again.";
     if(shopThanksTimer) clearTimeout(shopThanksTimer);
     el.classList.add("show");
     const dismiss = () => { el.classList.remove("show"); el.removeEventListener("click", dismiss); };
@@ -5554,6 +5573,36 @@ var qrcode = function() {
     closeSheet("shopOverlay");
     renderAll();
     showShopThanksToast();
+  });
+
+  // "Sell items back" -- the undo button for a Teller purchase made by
+  // mistake (or just to see how it worked): whatever gold you type here
+  // is the exact mirror of Check Out -- it goes back onto the envelope's
+  // remaining gold, and back onto the real account balance too, using the
+  // same still-outstanding check so it matches however the original spend
+  // was actually applied.
+  $("#shopSellBtn").addEventListener("click", () => {
+    const t = state.transactions.find(x => x.id === shopTxId);
+    if(!t) return;
+    const sellRaw = $("#shopSellInput").value.trim();
+    const sell = parseFloat(sellRaw);
+    if(sellRaw === "" || isNaN(sell) || sell <= 0) return;
+    addEnvelopeSpend(t, -sell);
+    // Don't let a refund push "spent" negative -- remaining gold caps back
+    // out at the envelope's full per-period budget, not past it.
+    ensureCurrentStart();
+    const rec = state.envelopeSpent[state.currentStartISO];
+    const key = envelopeKeyFor(t);
+    if(rec[key] < 0) rec[key] = 0;
+    const stillOutstanding = t.status === "unpaid" || (t.status === "pending" && !t.deducted);
+    if(stillOutstanding){
+      const { get: getBal, set: setBal } = balanceFnsFor(t);
+      if(getBal() !== null) setBal(round2(Number(getBal()) + sell));
+    }
+    $("#shopSellInput").value = "";
+    $("#shopGoldAmount").textContent = getEnvelopeRemaining(t) + "G";
+    renderAll();
+    showShopThanksToast("Sold! Gold refunded.");
   });
 
   let confirmCallback = null;
