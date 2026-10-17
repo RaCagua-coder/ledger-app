@@ -806,6 +806,20 @@
   .shop-sell-input-row{display:flex;gap:8px;align-items:stretch;}
   .shop-sell-input-row .shop-sell-input{flex:1;margin-bottom:0;}
   .shop-sell-btn{flex:none;padding:0 16px;font-size:13px;}
+  /* Buy a Potion -- converts set-aside gold straight into spendable cash,
+     without it ever leaving as a real purchase. Spends the gold (envelope
+     remaining drops) but does NOT touch the real balance, so Outstanding
+     drops by the same amount and Remaining/HP rises instead. */
+  .shop-potion-row{
+    width:100%;max-width:220px;margin:0 auto 14px;padding-top:12px;
+    border-top:1px dashed #2d6a5f;
+  }
+  .shop-potion-label{font-size:16px;font-weight:700;color:var(--text);}
+  .shop-potion-input-row{display:flex;gap:8px;align-items:stretch;}
+  .shop-potion-input-row .shop-potion-input{flex:1;margin-bottom:0;}
+  .shop-potion-bottle-icon{display:inline-flex;flex:none;width:44px;height:44px;align-self:center;}
+  .shop-potion-bottle-icon svg{width:100%;height:100%;display:block;shape-rendering:crispEdges;}
+  .btn.ghost.shop-potion-btn{flex:none;padding:0 16px;font-size:13px;background:var(--teal);color:#000;border-color:var(--teal);}
   .shop-thanks-toast{
     position:fixed;left:50%;top:50%;z-index:140;
     transform:translate(-50%,-50%) scale(.85);
@@ -1347,6 +1361,19 @@
       <label>Account 2 Name</label>
       <input type="text" id="account2NameInput" placeholder="Affirm">
     </div>
+    <div class="section-label">Shop Locations</div>
+    <div class="field">
+      <label>Marketplace Name</label>
+      <input type="text" id="marketNameInput" placeholder="Marketplace">
+    </div>
+    <div class="field">
+      <label>Stable Name</label>
+      <input type="text" id="stableNameInput" placeholder="Stables">
+    </div>
+    <div class="field">
+      <label>Tavern Name</label>
+      <input type="text" id="tavernNameInput" placeholder="Tavern">
+    </div>
     <div class="section-label">Tags</div>
     <div class="field">
       <label>Your Tags</label>
@@ -1769,14 +1796,22 @@
         <span class="shop-gold-amount" id="shopGoldAmount">250G</span>
       </div>
       <div id="shopSpendRow">
-        <label class="shop-spend-label">How much did you spend?</label>
+        <label class="shop-spend-label shop-potion-label">Buy items</label>
         <input type="number" inputmode="decimal" step="0.01" id="shopSpendInput" class="shop-spend-input" placeholder="0.00">
       </div>
       <div id="shopSellRow" class="shop-sell-row">
-        <label class="shop-spend-label">Sell items back -- how much gold?</label>
+        <label class="shop-spend-label shop-potion-label">Sell items</label>
         <div class="shop-sell-input-row">
           <input type="number" inputmode="decimal" step="0.01" id="shopSellInput" class="shop-spend-input shop-sell-input" placeholder="0.00">
           <button type="button" class="btn ghost shop-sell-btn" id="shopSellBtn">Sell</button>
+        </div>
+      </div>
+      <div id="shopPotionRow" class="shop-potion-row">
+        <label class="shop-spend-label shop-potion-label">Buy a potion -- turn gold into HP</label>
+        <div class="shop-potion-input-row">
+          <span class="shop-potion-bottle-icon" id="shopPotionBottleIcon"></span>
+          <input type="number" inputmode="decimal" step="0.01" id="shopPotionInput" class="shop-spend-input shop-potion-input" placeholder="0.00">
+          <button type="button" class="btn ghost shop-potion-btn" id="shopPotionBtn">Drink</button>
         </div>
       </div>
     </div>
@@ -4534,6 +4569,15 @@ var qrcode = function() {
   // the two never drift apart.
   function account1Name(){ return (state.settings && state.settings.account1Name) || "Bank Account"; }
   function account2Name(){ return (state.settings && state.settings.account2Name) || "Affirm"; }
+  // Editable display names for the three Shop Envelope "locations" --
+  // defaults to Marketplace/Stable/Tavern, renameable in Settings the same
+  // way the two accounts are, without touching how envelopes are matched
+  // (that's still by label regex -- this only changes what's shown).
+  const SHOP_KIND_DEFAULT_NAMES = { market: "Marketplace", stable: "Stables", tavern: "Tavern" };
+  function shopKindName(kind){
+    const names = (state.settings && state.settings.shopKindNames) || {};
+    return names[kind] || SHOP_KIND_DEFAULT_NAMES[kind] || SHOP_KIND_DEFAULT_NAMES.market;
+  }
   function accountCount(){ return Number(state.settings && state.settings.accountCount) === 1 ? 1 : 2; }
   function isAffirmTag(tags){
     if(accountCount() === 1) return false;
@@ -4558,16 +4602,93 @@ var qrcode = function() {
   // own budgeted amount was already accounted for as its own bill, so
   // this just tracks how much of that already-set-aside gold is left.
   function isShopEnvelope(t){
-    return !!(t && t.type === "bill" && /grocer|items\s*(and|&)\s*supplies|marketplace|\bgas\b|fuel|petrol/i.test(t.label || ""));
+    return !!(t && t.type === "bill" && /grocer|items\s*(and|&)\s*supplies|marketplace|\bgas\b|fuel|petrol|stables?|eating\s*out|dining|restaurant|tavern/i.test(t.label || ""));
   }
   // Which flavor of Shop Envelope this is, so the Teller screen and its
   // action button can speak in period-appropriate terms instead of always
   // saying "Marketplace" -- groceries/items visit the Marketplace, gas
-  // visits the Stables (the era-appropriate stand-in for refueling).
+  // visits the Stables, eating out visits the Tavern. Each kind also
+  // matches on its own location name directly ("Stables", "Tavern") so a
+  // bill renamed to match the location keeps working as that envelope.
   function shopEnvelopeKind(t){
-    return /\bgas\b|fuel|petrol/i.test(t.label || "") ? "stable" : "market";
+    if(/\bgas\b|fuel|petrol|stables?/i.test(t.label || "")) return "stable";
+    if(/eating\s*out|dining|restaurant|tavern/i.test(t.label || "")) return "tavern";
+    return "market";
   }
   function envelopeKeyFor(t){ return t.seriesId || t.id; }
+
+  // ---------- Staple Shop Envelopes ----------
+  // The three starting "locations" every pay period opens with: Marketplace,
+  // Stables (gas), Tavern (eating out) -- each a $0 gold envelope that's
+  // there automatically, even if nothing's been spent yet. The user edits
+  // the amount themselves once it exists; this just guarantees it exists.
+  const STAPLE_ENVELOPES = [
+    { kind: "market", label: "Marketplace" },
+    { kind: "stable", label: "Stables" },
+    { kind: "tavern", label: "Tavern" }
+  ];
+  let stapleCheckedForStart = null;
+  function ensureStapleEnvelopes(){
+    // Only meaningful in the single-period (paycheck) view -- Month/View 2
+    // isn't tied to one period's gold envelopes the same way.
+    if(state.viewMode !== "1") return;
+    ensureCurrentStart();
+    const startISO = state.currentStartISO;
+    // Cheap guard: once a given period has been checked/seeded in this
+    // session, skip re-scanning the transaction list on every render.
+    if(stapleCheckedForStart === startISO) return;
+    stapleCheckedForStart = startISO;
+
+    const start = toDateOnly(parseISO(startISO));
+    // Going-forward only: never backfill staples onto a period that's
+    // already in the past relative to today's own live pay period.
+    const liveStart = periodStartContaining(new Date());
+    if(start < liveStart) return;
+
+    const end = periodEnd(start);
+    const inPeriod = state.transactions.filter(t => {
+      if(t.type !== "bill") return false;
+      const d = toDateOnly(parseISO(t.date));
+      return d >= start && d <= end;
+    });
+
+    let added = false;
+    STAPLE_ENVELOPES.forEach(staple => {
+      const exists = inPeriod.some(t => isShopEnvelope(t) && shopEnvelopeKind(t) === staple.kind);
+      if(exists) return;
+      state.transactions.push({
+        id: uid(), label: staple.label, amount: 0, date: startISO,
+        description: "", status: "unpaid", type: "bill", repeat: "none",
+        everyXDays: null, seriesId: null, tags: [], deducted: false, url: ""
+      });
+      added = true;
+    });
+    if(added) save();
+  }
+
+  // One-time migration: Ra's existing bills say "Gas" and "Eating Out" --
+  // now that "Stables" and "Tavern" are the real location names (and are
+  // recognized as shop envelopes in their own right), rename every
+  // existing bill that still says the old wording, everywhere in the
+  // app's history, not just new periods going forward. Runs once per
+  // device (state.shopNamesMigratedV1 guards it) since it's a destructive
+  // text rewrite, not something to redo on every load.
+  function migrateShopEnvelopeLabels(){
+    if(state.shopNamesMigratedV1) return;
+    let changed = false;
+    state.transactions.forEach(t => {
+      if(t.type !== "bill" || !t.label) return;
+      if(/eating\s*out/i.test(t.label)){
+        t.label = t.label.replace(/eating\s*out/i, "Tavern");
+        changed = true;
+      } else if(/\bgas\b/i.test(t.label) && !/stable/i.test(t.label)){
+        t.label = t.label.replace(/\bgas\b/i, "Stables");
+        changed = true;
+      }
+    });
+    state.shopNamesMigratedV1 = true;
+    if(changed) save();
+  }
   function getEnvelopeSpent(t){
     ensureCurrentStart();
     const rec = (state.envelopeSpent || {})[state.currentStartISO] || {};
@@ -5042,7 +5163,7 @@ var qrcode = function() {
       const linkedBoss = !shopEnvelope ? state.bosses.find(b => b.linkedKey && b.linkedKey === bossKey) : null;
       return `<div class="tx-row${menuOpen ? " menu-active" : ""}${shopEnvelope ? " tx-row-shop" : ""}" data-id="${t.id}">
         ${acctBarHTML}
-        ${shopEnvelope ? ('<span class="shop-pouch-row-icon" title="Shop Envelope">' + shopPouchIconSVG() + '</span>') : ""}
+        ${shopEnvelope ? ('<span class="shop-pouch-row-icon" title="' + escapeHtml(shopKindName(shopEnvelopeKind(t))) + '">' + shopKindIconSVG(shopEnvelopeKind(t)) + '</span>') : ""}
         ${linkedBoss ? ('<span class="boss-portrait-row-icon" title="' + escapeHtml(linkedBoss.name || "Boss") + '">' + bossPortraitSVG(linkedBoss) + '</span>') : ""}
         <div class="tx-main">
           <div class="tx-label ${amtClass}">${escapeHtml(t.label)}${t.seriesId ? `<span class="repeat-badge" title="${REPEAT_LABELS[t.repeat]||"Repeating"}">${REPEAT_ICON}</span>` : ""}${t.type === "transaction" ? `<span class="txn-monster-badge" title="${escapeHtml(t.label || "Transaction")}">${monsterIconSVGForLabel(t.label)}</span>` : ""}</div>
@@ -5450,6 +5571,7 @@ var qrcode = function() {
   }
 
   function renderAll(){
+    ensureStapleEnvelopes();
     applyAccountLabels();
     renderRangeLabel();
     renderTxList();
@@ -5541,8 +5663,10 @@ var qrcode = function() {
     const kind = shopEnvelopeKind(t);
     const tellerEl = $("#shopTellerLabel");
     const questionEl = $("#shopQuestion");
-    if(tellerEl) tellerEl.textContent = kind === "stable" ? "The Stable Hand" : "The Teller";
-    if(questionEl) questionEl.textContent = kind === "stable" ? "Resupply the horse?" : "What will it be?";
+    const tellerNames = { stable: "The Stable Hand", tavern: "The Tavern Keep", market: "The Teller" };
+    const questionText = { stable: "Resupply the horse?", tavern: "Grab a bite?", market: "What will it be?" };
+    if(tellerEl) tellerEl.textContent = tellerNames[kind] || tellerNames.market;
+    if(questionEl) questionEl.textContent = questionText[kind] || questionText.market;
     $("#shopItemLabel").textContent = t.label;
     $("#shopGoldAmount").textContent = getEnvelopeRemaining(t) + "G";
     $("#shopSpendInput").value = "";
@@ -5621,6 +5745,29 @@ var qrcode = function() {
     $("#shopGoldAmount").textContent = getEnvelopeRemaining(t) + "G";
     renderAll();
     showShopThanksToast("Sold! Gold refunded.");
+  });
+
+  // "Buy a Potion" -- converts set-aside gold straight into spendable cash
+  // without a real purchase happening. Spends the gold like Check Out does
+  // (envelope remaining drops, effectiveAmount shrinks), but deliberately
+  // skips Check Out's balance deduction -- so the smaller effectiveAmount
+  // pulls Outstanding down with nothing offsetting it, and Remaining/the
+  // HP bar rise by the exact same amount. Capped at whatever gold is
+  // actually left in the envelope.
+  $("#shopPotionBtn").addEventListener("click", () => {
+    const t = state.transactions.find(x => x.id === shopTxId);
+    if(!t) return;
+    const potionRaw = $("#shopPotionInput").value.trim();
+    const potion = parseFloat(potionRaw);
+    if(potionRaw === "" || isNaN(potion) || potion <= 0) return;
+    const remaining = getEnvelopeRemaining(t);
+    const amt = Math.min(potion, Math.max(remaining, 0));
+    if(amt <= 0) return;
+    addEnvelopeSpend(t, amt);
+    $("#shopPotionInput").value = "";
+    $("#shopGoldAmount").textContent = getEnvelopeRemaining(t) + "G";
+    renderAll();
+    showShopThanksToast("Potion quaffed! " + fmtMoney(amt) + " freed up.");
   });
 
   let confirmCallback = null;
@@ -5987,8 +6134,8 @@ var qrcode = function() {
     let html = "";
     if(isShopEnvelope(t)){
       const kind = shopEnvelopeKind(t);
-      const visitLabel = kind === "stable" ? "Visit the Stables" : "Visit Marketplace";
-      html += `<button type="button" class="action-wide-btn" data-action="visitMarketplace"><span class="shop-pouch-btn-icon">${shopPouchIconSVG()}</span> ${visitLabel}</button>`;
+      const visitLabel = "Visit the " + shopKindName(kind);
+      html += `<button type="button" class="action-wide-btn" data-action="visitMarketplace"><span class="shop-pouch-btn-icon">${shopKindIconSVG(kind)}</span> ${escapeHtml(visitLabel)}</button>`;
     }
     if(t.seriesId){
       html += btn("a-coral", "deleteSeries", actionIcons.trash, "Delete Series");
@@ -7321,6 +7468,9 @@ var qrcode = function() {
     $("#accountCountSel").value = String(accountCount());
     $("#account1NameInput").value = account1Name();
     $("#account2NameInput").value = account2Name();
+    $("#marketNameInput").value = shopKindName("market");
+    $("#stableNameInput").value = shopKindName("stable");
+    $("#tavernNameInput").value = shopKindName("tavern");
     toggleAccount2Field();
     openSheet("settingsOverlay");
   });
@@ -7361,6 +7511,12 @@ var qrcode = function() {
     const newAccount2Name = $("#account2NameInput").value.trim() || "Affirm";
     renameAccountTagEverywhere(oldAccount2Name, newAccount2Name);
     state.settings.account2Name = newAccount2Name;
+
+    state.settings.shopKindNames = {
+      market: $("#marketNameInput").value.trim() || SHOP_KIND_DEFAULT_NAMES.market,
+      stable: $("#stableNameInput").value.trim() || SHOP_KIND_DEFAULT_NAMES.stable,
+      tavern: $("#tavernNameInput").value.trim() || SHOP_KIND_DEFAULT_NAMES.tavern
+    };
 
     state.currentStartISO = null;
     closeSheet("settingsOverlay");
@@ -7726,15 +7882,221 @@ var qrcode = function() {
     1:"#140d08", 2:"#2e1b0e", 3:"#6b4226", 4:"#d9951f",
     5:"#ffcf4d", 6:"#d9b989", 7:"#a9774a", 8:"#fff6c8", 9:"#8a5a32"
   };
-  function shopPouchIconSVG(){
+  // Shared renderer for every pixel-art grid icon in this section -- takes
+  // a grid of palette codes (0 = transparent) and a code->color map, and
+  // draws it as one crisp-edged 1x1-rect-per-pixel SVG. The viewBox sizes
+  // itself to the grid, so a denser (e.g. 28x28, "32-bit"-style) grid works
+  // the same as the original 14x14 ones.
+  function pixelGridSVG(grid, colors){
     let rects = "";
-    SHOP_POUCH_GRID.forEach((row, r) => {
+    const h = grid.length, w = grid[0].length;
+    grid.forEach((row, r) => {
       row.forEach((code, c) => {
         if(code === 0) return;
-        rects += '<rect x="' + c + '" y="' + r + '" width="1" height="1" fill="' + SHOP_POUCH_COLORS[code] + '"/>';
+        rects += '<rect x="' + c + '" y="' + r + '" width="1" height="1" fill="' + colors[code] + '"/>';
       });
     });
-    return '<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">' + rects + '</svg>';
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">' + rects + '</svg>';
+  }
+  function shopPouchIconSVG(){
+    return pixelGridSVG(SHOP_POUCH_GRID, SHOP_POUCH_COLORS);
+  }
+
+  // The Marketplace, Stables and Tavern envelopes each get their own
+  // pixel-art icon instead of sharing one generic gold pouch -- a basket
+  // of produce, a horseshoe, and a tankard, so the three "locations" read
+  // apart from each other at a glance the way the gold pouch used to stand
+  // in for all of them.
+  // The awning narrowed to exactly the produce row's own width, with a
+  // brown support pole running from each of its two base corners straight
+  // down to the bottom of the produce -- a plain stall frame instead of a
+  // solid shelf bar, per Ra's follow-up.
+  const SHOP_MARKET_GRID = [
+    [0,0,0,0,0,0,0,0,0,0,0,"1","5_L","5_L","5_L","5_L","1",0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,"1","1","1","1","1","5_L","5_L","5_L","5_L","1","1","1","1","1",0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,"1","4_L","4_L","4_L","4_L","4_L","5_L","5_L","5_L","5_L","4_L","4_L","4_L","4_L","4_L","1",0,0,0,0,0,0],
+    [0,0,"1","1","1","1","1","4_L","4_L","4_L","4_L","4_L","5_L","5_L","5_L","5_L","4_L","4_L","4_L","4_L","4_L","1","1","1","1","1",0,0],
+    [0,"1","5_L","5_L","5_L","5_L","5_L","4_L","4_L","4_L","4_L","4_L","5_L","5_L","5_L","5_L","4_L","4_L","4_L","4_L","4_L","5_L","5_L","5_L","5_L","5_L","1",0],
+    [0,"1","5_L","5_L","5_L","5_L","5_L","4_L","4_L","4_L","4_L","4_L","5_L","5_L","5_L","5_L","4_L","4_L","4_L","4_L","4_L","5_L","5_L","5_L","5_L","5_L","1",0],
+    [0,"1","5_L","5_L","5_L","5_L","5_L","4_M","4_M","4_M","4_M","4_M","5_L","5_L","5_L","5_L","4_M","4_M","4_M","4_M","4_M","5_L","5_L","5_L","5_L","5_L","1",0],
+    [0,"1","5_M","5_M","5_M","5_M","5_M","4_M","4_M","4_M","4_M","4_M","5_M","5_M","5_M","5_M","4_M","4_M","4_M","4_M","4_M","5_M","5_M","5_M","5_M","5_M","1",0],
+    [0,"1","5_M","5_M","5_M","5_M","5_M","4_D","4_D","4_D","4_D","4_D","5_M","5_M","5_M","5_M","4_D","4_D","4_D","4_D","4_D","5_M","5_M","5_M","5_M","5_M","1",0],
+    [0,0,"1","5_M","5_M","5_M","1","1","4_D","4_D","4_D","1","5_M","5_M","5_M","1","1","4_D","4_D","4_D","1","1","5_M","5_M","5_M","1",0,0],
+    [0,0,"1","1","5_M","1",0,0,"1","4_D","1",0,"1","5_M","1",0,0,"1","4_D","1","1",0,"1","5_M","1","1",0,0],
+    [0,"1","6_L","6_L","1",0,"1","1","5_M","1","1",0,"1","1","7_L","1","1",0,"1","1","9_L","1","1","1","6_L","6_L","1",0],
+    [0,"1","6_L","6_L","1","1","5_M","5_M","5_M","5_M","5_M","1","7_L","7_L","7_L","7_L","7_L","1","9_L","9_L","9_L","9_L","9_L","1","6_L","6_L","1",0],
+    [0,"1","6_M","6_M","1","1","5_D","5_D","5_D","5_D","5_D","1","7_L","7_L","7_L","7_L","7_L","1","9_L","9_L","9_L","9_L","9_L","1","6_M","6_M","1",0],
+    [0,"1","6_D","6_D","1","5_D","5_D","5_D","5_D","5_D","5_D","7_M","7_M","7_M","7_M","7_M","7_M","9_M","9_M","9_M","9_M","9_M","9_M","9_M","6_D","6_D","1",0],
+    [0,"1","6_D","6_D","2_L","2_L","5_D","5_D","5_D","5_D","5_D","2_L","7_M","7_M","7_M","7_M","7_M","2_L","9_M","9_M","9_M","9_M","9_M","2_L","6_D","6_D","1",0],
+    [0,"1","2_M","2_M","2_M","2_M","5_D","5_D","5_D","5_D","5_D","2_M","7_D","7_D","7_D","7_D","7_D","2_M","9_D","9_D","9_D","9_D","9_D","2_M","2_M","2_M","1",0],
+    [0,"1","2_D","2_D","2_D","2_D","2_D","2_D","5_D","2_D","2_D","2_D","2_D","2_D","7_D","2_D","2_D","2_D","2_D","2_D","9_D","2_D","2_D","2_D","2_D","2_D","1",0],
+    [0,"1","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","1",0],
+    [0,"1","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","1",0],
+    [0,"1","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","1",0],
+    [0,"1","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","1",0],
+    [0,"1","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","1",0],
+    [0,"1","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","1",0],
+    [0,"1","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","1",0],
+    [0,"1","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","1",0],
+    [0,0,"1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1",0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  ];
+  const SHOP_MARKET_COLORS = { "1":"#140d08", "5_L":"#d35757", "4_L":"#f3efdf", "4_M":"#f0ead6", "5_M":"#c62828", "4_D":"#c0bbab", "6_L":"#a57e5a", "7_L":"#72976a", "9_L":"#e8ad59", "6_M":"#8c5a2b", "5_D":"#9e2020", "6_D":"#704822", "7_M":"#4a7a40", "9_M":"#e2962a", "2_L":"#a58565", "2_M":"#8c6239", "7_D":"#3b6233", "9_D":"#b57822", "2_D":"#704e2e", "3_L":"#8c6c56", "3_M":"#6b4226", "3_D":"#56351e" };
+  function shopMarketIconSVG(){
+    return pixelGridSVG(SHOP_MARKET_GRID, SHOP_MARKET_COLORS);
+  }
+
+  const SHOP_STABLE_GRID = [
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","1",0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","3_L","3_L","3_L","1","1",0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","3_L","3_L","3_L","3_L","3_L","1",0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","3_L","3_L","3_L","3_L","3_L","3_L","2_L","1","1",0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","3_L","3_L","3_L","3_L","3_L","2_L","2_L","2_L","1","1","1",0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","3_L","3_L","3_L","3_L","3_L","2_L","2_L","2_L","2_L","2_L","2_L","1","1","1",0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","3_L","3_L","3_L","3_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","1","1"],
+    [0,0,0,0,0,"1","1","1","1","1","1",0,0,0,"1","1","3_M","3_M","3_M","3_M","1","2_L","2_L","2_L","2_L","2_L","1","2_L","2_L","2_L","2_L","1"],
+    [0,0,0,"1","1","1","3_M","3_M","3_M","3_M","1","1","1","1","1","3_M","3_M","3_M","3_M","1","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","4_L","4_L","1"],
+    [0,"1","1","1","3_M","3_M","3_M","3_M","3_M","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","4_M","4_M","1","1"],
+    ["1","1","3_M","3_M","3_M","3_M","3_M","3_M","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","4_D","4_D","1","1",0],
+    ["1","3_M","3_M","3_M","3_M","3_M","3_M","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","2_L","1","1",0,0],
+    ["3_D","3_D","3_D","3_D","3_D","3_D","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","1","1","1",0,0,0],
+    ["3_D","3_D","3_D","3_D","3_D","3_D","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","1",0,0,0,0,0],
+    ["3_D","3_D","3_D","3_D","3_D","3_D","3_D","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","1","1",0,0,0,0,0],
+    ["1","1","3_D","3_D","3_D","3_D","3_D","3_D","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","1","1",0,0,0,0,0,0],
+    [0,"1","1","1","1","1","1","1","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","1","1",0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,"1","1","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","1","1",0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,"1","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","2_M","1",0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,"1","1","2_M","2_M","2_M","2_M","2_M","2_M","2_M","1","2_M","2_M","2_M","2_M","2_M","2_M","2_M","1",0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,"1","2_D","2_D","2_D","2_D","1","2_D","2_D","2_D","1","2_D","2_D","2_D","1","2_D","2_D","2_D","1","1",0,0,0,0,0,0,0,0],
+    [0,0,0,0,"1","1","2_D","2_D","2_D","2_D","1","2_D","2_D","2_D","1","2_D","2_D","2_D","1","2_D","2_D","2_D","2_D","1","1",0,0,0,0,0,0,0],
+    [0,0,0,0,"1","2_D","2_D","2_D","2_D","1","1","2_D","2_D","2_D","1","2_D","2_D","2_D","2_D","2_D","2_D","2_D","2_D","2_D","1",0,0,0,0,0,0,0],
+    [0,0,0,0,"1","2_D","2_D","2_D","2_D","1","1","2_D","2_D","2_D","1","2_D","2_D","2_D","2_D","1","2_D","2_D","2_D","2_D","1",0,0,0,0,0,0,0],
+    [0,0,0,0,"1","2_D","2_D","2_D","2_D","1","1","2_D","2_D","2_D","1","1","2_D","2_D","2_D","1","1","2_D","2_D","2_D","1","1",0,0,0,0,0,0],
+    [0,0,0,0,"1","2_D","2_D","2_D","2_D","1","1","2_D","2_D","2_D","1","1","2_D","2_D","2_D","1","1","2_D","2_D","2_D","2_D","1",0,0,0,0,0,0],
+    [0,0,0,0,"1","6_L","6_L","6_L","6_L","1","1","6_L","6_L","6_L","1","1","6_L","6_L","6_L","1","1","2_D","6_L","6_L","6_L","1",0,0,0,0,0,0],
+    [0,0,0,0,"1","6_D","6_D","6_D","6_D","1","1","6_D","6_D","6_D","1","1","6_D","6_D","6_D","1","1","1","6_D","6_D","6_D","1",0,0,0,0,0,0],
+    [0,0,0,0,"1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1",0,"1","1","1","1","1",0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  ];
+  const SHOP_STABLE_COLORS = { "1":"#140d08", "3_L":"#4a3727", "2_L":"#d3ab80", "3_M":"#36210f", "4_L":"#f3eada", "4_M":"#f0e4d0", "4_D":"#c0b6a6", "3_D":"#2a1a0c", "2_M":"#c6935c", "2_D":"#9e764a", "6_L":"#544b46", "6_D":"#1d130e" };
+  function shopStableIconSVG(){
+    return pixelGridSVG(SHOP_STABLE_GRID, SHOP_STABLE_COLORS);
+  }
+
+  // A little half-timbered tavern building -- peaked roof, chimney, a dark
+  // window and a door -- in place of the mug, after Ra shared a reference
+  // image of a cozy pixel-art tavern front and asked for something in
+  // that spirit (can't match it exactly at 14x14, but same idea: a little
+  // building, not just a drink).
+  const SHOP_TAVERN_GRID = [
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","1","1","1","1",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","1","1","1","1",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","1","1","1","1",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","1","1","1","1",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","3_VL","3_VL","3_VL","3_VL","3_VL","3_VL","3_VL","3_VL","1","1","1","1",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","3s_VL","3s_VL","3s_VL","3s_VL","3s_VL","3s_VL","3s_VL","3s_VL","1","1","1","1",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","3_VL","3_VL","3_VL","3_VL","3_VL","3_VL","3_VL","3_VL","1","1","1","1",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","1","1","1","1",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","3s_L","3s_L","3s_L","3s_L","3s_L","3s_L","3s_L","3s_L","3s_L","3s_L","3s_L","3s_L","3s_L","3s_L","3s_L","3s_L","1","1","1","1",0,0,0,0,0,0,0,0,"8_VL","8_VL","8_VL","8_VL",0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","1","1","1","1",0,0,0,0,0,0,0,0,"8s_VL","8s_VL","8s_VL","8s_VL",0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","3_L","1","1","1","1",0,0,0,0,0,0,0,0,"8_VL","8_VL","8_VL","8_VL",0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","3s_M","3s_M","3s_M","3s_M","3s_M","3s_M","3s_M","3s_M","3s_M","3s_M","3s_M","3s_M","3s_M","3s_M","3s_M","3s_M","1","1","1","1",0,0,0,0,0,0,0,0,"8s_VL","8s_VL","8s_VL","8s_VL",0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","1","1","1","1",0,0,0,0,"8_VL","8_VL","8_VL","8_VL","1","1","1","1"],
+    [0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","3_M","1","1","1","1",0,0,0,0,"8s_VL","8s_VL","8s_VL","8s_VL","1","1","1","1"],
+    [0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","3s_D","1","1","1","1",0,0,0,0,"8_L","8_L","8_L","8_L","1","1","1","1"],
+    [0,0,0,0,0,0,0,0,0,0,0,0,"1","1","1","1","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","1","1","1","1",0,0,0,0,"8s_L","8s_L","8s_L","8s_L","1","1","1","1"],
+    [0,0,0,0,0,0,0,0,"1","1","1","1","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","3_D","1","1","1","1","8_L","8_L","8_L","8_L","1","1","1","1"],
+    [0,0,0,0,0,0,0,0,"1","1","1","1","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","3s_VD","1","1","1","1","8s_L","8s_L","8s_L","8s_L","1","1","1","1"],
+    [0,0,0,0,0,0,0,0,"1","1","1","1","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","1","1","1","1","8_L","8_L","8_L","8_L","1","1","1","1"],
+    [0,0,0,0,0,0,0,0,"1","1","1","1","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","3_VD","1","1","1","1","8s_L","8s_L","8s_L","8s_L","1","1","1","1"],
+    [0,0,0,0,"1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1"],
+    [0,0,0,0,"1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1"],
+    [0,0,0,0,"1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1"],
+    [0,0,0,0,"1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1"],
+    ["1","1","1","1","4_VL","4_VL","4_VL","7_VL","7_VL","7_VL","7s_VL","7s_VL","7_VL","7_VL","7_VL","4s_VL","4_VL","4_VL","4_VL","4s_VL","7_VL","7_VL","7_VL","7s_VL","7s_VL","7_VL","7_VL","7_VL","4_VL","4_VL","4_VL","4s_VL","4_VL","4_VL","7_VL","7_VL","7_VL","7s_VL","7s_VL","7_VL","7_VL","7_VL","4_VL","4s_VL","4_VL","4_VL","4_VL","4s_VL","8_M","8_M","8_M","8_M","1","1","1","1"],
+    ["1","1","1","1","4_VL","4_VL","4_VL","7_VL","7_VL","7_VL","7s_VL","7s_VL","7_VL","7_VL","7_VL","4s_VL","4_VL","4_VL","4_VL","4s_VL","7_VL","7_VL","7_VL","7s_VL","7s_VL","7_VL","7_VL","7_VL","4_VL","4_VL","4_VL","4s_VL","4_VL","4_VL","7_VL","7_VL","7_VL","7s_VL","7s_VL","7_VL","7_VL","7_VL","4_VL","4s_VL","4_VL","4_VL","4_VL","4s_VL","8s_M","8s_M","8s_M","8s_M","1","1","1","1"],
+    ["1","1","1","1","4_VL","4_VL","4_VL","7_L","7_L","7_L","7s_L","7s_L","7_L","7_L","7_L","4s_VL","4_VL","4_VL","4_VL","4s_VL","7_L","7_L","7_L","7s_L","7s_L","7_L","7_L","7_L","4_VL","4_VL","4_VL","4s_VL","4_VL","4_VL","7_L","7_L","7_L","7s_L","7s_L","7_L","7_L","7_L","4_VL","4s_VL","4_VL","4_VL","4_VL","4s_VL","8_D","8_D","8_D","8_D","1","1","1","1"],
+    ["1","1","1","1","4_VL","4_VL","4_VL","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","4s_VL","4_VL","4_VL","4_VL","4s_VL","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","4_VL","4_VL","4_VL","4s_VL","4_VL","4_VL","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","4_VL","4s_VL","4_VL","4_VL","4_VL","4s_VL","8s_D","8s_D","8s_D","8s_D","1","1","1","1"],
+    ["1","1","1","1","4_VL","4_VL","4_VL","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","4s_VL","4_VL","4_VL","4_VL","4s_VL","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","4_VL","4_VL","4_VL","4s_VL","4_VL","4_VL","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","7s_M","4_VL","4s_VL","4_VL","4_VL","4_VL","4s_VL","8_D","8_D","8_D","8_D","1","1","1","1"],
+    ["1","1","1","1","4_L","4_L","4_L","7_D","7_D","7_D","7s_D","7s_D","7_D","7_D","7_D","4s_L","4_L","4_L","4_L","4s_L","7_D","7_D","7_D","7s_D","7s_D","7_D","7_D","7_D","4_L","4_L","4_L","4s_L","4_L","4_L","7_D","7_D","7_D","7s_D","7s_D","7_D","7_D","7_D","4_L","4s_L","4_L","4_L","4_L","4s_L","8s_D","8s_D","8s_D","8s_D","1","1","1","1"],
+    ["1","1","1","1","4_L","4_L","4_L","7_VD","7_VD","7_VD","7s_VD","7s_VD","7_VD","7_VD","7_VD","4s_L","4_L","4_L","4_L","4s_L","7_VD","7_VD","7_VD","7s_VD","7s_VD","7_VD","7_VD","7_VD","4_L","4_L","4_L","4s_L","4_L","4_L","7_VD","7_VD","7_VD","7s_VD","7s_VD","7_VD","7_VD","7_VD","4_L","4s_L","4_L","4_L","4_L","4s_L","8_VD","8_VD","8_VD","8_VD","1","1","1","1"],
+    ["1","1","1","1","4_L","4_L","4_L","7_VD","7_VD","7_VD","7s_VD","7s_VD","7_VD","7_VD","7_VD","4s_L","4_L","4_L","4_L","4s_L","7_VD","7_VD","7_VD","7s_VD","7s_VD","7_VD","7_VD","7_VD","4_L","4_L","4_L","4s_L","4_L","4_L","7_VD","7_VD","7_VD","7s_VD","7s_VD","7_VD","7_VD","7_VD","4_L","4s_L","4_L","4_L","4_L","4s_L","8s_VD","8s_VD","8s_VD","8s_VD","1","1","1","1"],
+    ["1","1","1","1","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","1","1","1","1","1","1","1","1","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","8_VD","8_VD","8_VD","8_VD","1","1","1","1"],
+    ["1","1","1","1","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","1","1","1","1","1","1","1","1","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","8s_VD","8s_VD","8s_VD","8s_VD","1","1","1","1"],
+    ["1","1","1","1","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","1","1","1","1","1","1","1","1","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","8_VD","8_VD","8_VD","8_VD","1","1","1","1"],
+    ["1","1","1","1","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","1","1","1","1","1","1","1","1","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","4_L","4_L","4_L","4s_L","8s_VD","8s_VD","8s_VD","8s_VD","1","1","1","1"],
+    ["1","1","1","1","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","6_VL","6_VL","6s_VL","6_VL","6_VL","6s_VL","6_VL","6_VL","6s_VL","6_VL","6_VL","6s_VL","6_VL","6_VL","6s_VL","6_VL","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","1","1","1","1","1","1","1","1"],
+    ["1","1","1","1","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","6_VL","6_VL","6s_VL","6_VL","6_VL","6s_VL","6_VL","6_VL","6s_VL","6_VL","6_VL","6s_VL","6_VL","6_VL","6s_VL","6_VL","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","1","1","1","1","1","1","1","1"],
+    ["1","1","1","1","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","6_VL","6_VL","6s_VL","6_VL","6_VL","6s_VL","6_VL","6_VL","6s_VL","6_VL","6_VL","6s_VL","6_VL","6_VL","6s_VL","6_VL","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","1","1","1","1","1","1","1","1"],
+    ["1","1","1","1","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","6_L","6_L","6s_L","6_L","6_L","6s_L","6_L","6_L","6s_L","6_L","6_L","6s_L","6_L","6_L","6s_L","6_L","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","1","1","1","1","1","1","1","1"],
+    ["1","1","1","1","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","6_L","6_L","6s_L","6_L","6_L","6s_L","6_L","6_L","6s_L","6_L","6_L","6s_L","6_L","6_L","6s_L","6_L","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","4_M","4_M","4_M","4s_M","1","1","1","1"],
+    ["1","1","1","1","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","6_L","6_L","6s_L","6_L","6_L","6s_L","6_L","6_L","6s_L","6_L","6_L","6s_L","6_L","6_L","6s_L","6_L","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","1","1","1","1"],
+    ["1","1","1","1","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","6_L","6_L","6s_L","6_L","6_L","6s_L","6_L","6_L","6s_L","6_L","6_L","6s_L","6_L","6_L","6s_L","6_L","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","1","1","1","1"],
+    ["1","1","1","1","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","6_M","6_M","6s_M","6_M","6_M","6s_M","6_M","6_M","6s_M","6_M","6_M","6s_M","6_M","KNOB_VL","6s_M","6_M","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","1","1","1","1"],
+    ["1","1","1","1","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","6_M","6_M","6s_M","6_M","6_M","6s_M","6_M","6_M","6s_M","6_M","6_M","6s_M","6_M","6_M","6s_M","6_M","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","1","1","1","1"],
+    ["1","1","1","1","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","6_M","6_M","6s_M","6_M","6_M","6s_M","6_M","6_M","6s_M","6_M","6_M","6s_M","6_M","6_M","6s_M","6_M","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","1","1","1","1"],
+    ["1","1","1","1","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","6_D","6_D","6s_D","6_D","6_D","6s_D","6_D","6_D","6s_D","6_D","6_D","6s_D","6_D","6_D","6s_D","6_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","4_D","4_D","4_D","4s_D","1","1","1","1"],
+    ["1","1","1","1","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","6_D","6_D","6s_D","6_D","6_D","6s_D","6_D","6_D","6s_D","6_D","6_D","6s_D","6_D","6_D","6s_D","6_D","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","1","1","1","1"],
+    ["1","1","1","1","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","6_D","6_D","6s_D","6_D","6_D","6s_D","6_D","6_D","6s_D","6_D","6_D","6s_D","6_D","6_D","6s_D","6_D","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","1","1","1","1"],
+    ["1","1","1","1","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","6_VD","6_VD","6s_VD","6_VD","6_VD","6s_VD","6_VD","6_VD","6s_VD","6_VD","6_VD","6s_VD","6_VD","6_VD","6s_VD","6_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","1","1","1","1"],
+    ["1","1","1","1","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","6_VD","6_VD","6s_VD","6_VD","6_VD","6s_VD","6_VD","6_VD","6s_VD","6_VD","6_VD","6s_VD","6_VD","6_VD","6s_VD","6_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","1","1","1","1"],
+    ["1","1","1","1","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","6_VD","6_VD","6s_VD","6_VD","6_VD","6s_VD","6_VD","6_VD","6s_VD","6_VD","6_VD","6s_VD","6_VD","6_VD","6s_VD","6_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","4_VD","4_VD","4_VD","4s_VD","1","1","1","1"],
+    ["1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1"],
+    ["1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1"],
+    ["1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1"],
+    ["1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1","1"]
+  ];
+  const SHOP_TAVERN_COLORS = { "1":"#140d08", "3_VL":"#6e89a8", "3s_VL":"#667c96", "3_L":"#537298", "3s_L":"#496382", "8_VL":"#856d5b", "8s_VL":"#766456", "3s_M":"#304e71", "3_M":"#3b5f8a", "3s_D":"#294361", "8_L":"#6e523d", "3_D":"#335277", "8s_L":"#5c4636", "3s_VD":"#243a54", "3_VD":"#2c4666", "4_VL":"#bf9a79", "7_VL":"#565b6c", "7s_VL":"#4c4e53", "4s_VL":"#ab8c70", "8_M":"#5a3a22", "8s_M":"#462d1b", "7_L":"#353d50", "7s_L":"#2a2d32", "8_D":"#4d321d", "7s_M":"#0d1016", "8s_D":"#3c2717", "4_L":"#b38760", "7_D":"#161d30", "7s_D":"#0b0e13", "4s_L":"#9c7755", "7_VD":"#131929", "7s_VD":"#0a0c10", "8_VD":"#432b19", "8s_VD":"#342114", "4_M":"#a9774a", "4s_M":"#8e643e", "6_VL":"#64564d", "6s_VL":"#5e534a", "6_L":"#47362b", "6s_L":"#3f3228", "4_D":"#916640", "4s_D":"#7a5635", "6_M":"#2e1b0e", "6s_M":"#25160b", "KNOB_VL":"#eed38f", "6_D":"#28170c", "6s_D":"#201309", "4_VD":"#7d5837", "4s_VD":"#694a2e", "6_VD":"#22140a", "6s_VD":"#1b1008" };
+  function shopTavernIconSVG(){
+    return pixelGridSVG(SHOP_TAVERN_GRID, SHOP_TAVERN_COLORS);
+  }
+
+  // Picks the right pixel-art icon for a Shop Envelope's kind -- falls back
+  // to the Marketplace basket for the default "market" kind (groceries,
+  // items & supplies) and anything unrecognized.
+  function shopKindIconSVG(kind){
+    if(kind === "stable") return shopStableIconSVG();
+    if(kind === "tavern") return shopTavernIconSVG();
+    return shopMarketIconSVG();
+  }
+
+  // A little teal potion bottle, shown to the left of the Potion input --
+  // matches the Drink button's teal so it reads as the same item.
+  const SHOP_POTION_GRID = [
+    [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,1,1,"8_L","8_L",1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,1,1,"8_L","8_L",1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,1,1,"8_M","8_M",1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,1,1,"8_D","8_D",1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,1,1,1,1,"6_L","6_L","6_L","6_L","6_L","6_L",1,1,1,1,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,1,1,1,1,"6_L","6_L","6_L","6_L","6_L","6_L",1,1,1,1,0,0,0,0,0,0,0,0],
+    [0,0,0,0,1,1,"6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L",1,1,0,0,0,0,0,0],
+    [0,0,0,0,1,1,"6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L",1,1,0,0,0,0,0,0],
+    [0,0,1,1,"6_L","6_L","6_L","6_L","7_L","7_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L","6_L",1,1,0,0,0,0],
+    [0,0,1,1,"6_M","6_M","6_M","6_M","7_D","7_D","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M",1,1,0,0,0,0],
+    [0,0,1,1,"6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M",1,1,0,0,0,0],
+    [0,0,1,1,"6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M",1,1,0,0,0,0],
+    [0,0,1,1,"6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M",1,1,0,0,0,0],
+    [0,0,1,1,"6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M","6_M",1,1,0,0,0,0],
+    [0,0,1,1,"6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D",1,1,0,0,0,0],
+    [0,0,1,1,"6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D",1,1,0,0,0,0],
+    [0,0,0,0,1,1,"6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D",1,1,0,0,0,0,0,0],
+    [0,0,0,0,1,1,"6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D","6_D",1,1,0,0,0,0,0,0],
+    [0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  ];
+  const SHOP_POTION_COLORS = { "1":"#140d08", "8_L":"#8c6c56", "8_M":"#6b4226", "8_D":"#56351e", "6_L":"#38d338", "7_L":"#c6ffc6", "6_M":"#00c700", "7_D":"#92cc92", "6_D":"#009f00" };
+  function shopPotionIconSVG(){
+    return pixelGridSVG(SHOP_POTION_GRID, SHOP_POTION_COLORS);
   }
 
   // Runs once per load: for every boss with a Due Date and a positive
@@ -8800,6 +9162,8 @@ var qrcode = function() {
   }, { passive:false });
 
   ensureCurrentStart();
+  migrateShopEnvelopeLabels();
+  $("#shopPotionBottleIcon").innerHTML = shopPotionIconSVG();
   applyBossInterest();
   checkBossDefeatBadges(); // silent catch-up on load; no popup for pre-existing payoffs
   $("#transactionsView").style.display = "";
