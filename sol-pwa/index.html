@@ -133,6 +133,12 @@
   .period-status-strip{
     display:flex;background:#132017;border-bottom:1px solid #2a4a30;
   }
+  .period-status-strip.in-overview{
+    border:1px solid #2a4a30;border-radius:10px;margin-bottom:14px;
+  }
+  .period-status-strip.in-overview .pss-item{flex-direction:column;align-items:center;gap:2px;padding:8px 2px;}
+  .period-status-strip.in-overview .pss-label{font-size:10px;}
+  .period-status-strip.in-overview .pss-value{font-size:13px;}
   .pss-item{
     flex:1;min-width:0;display:flex;align-items:baseline;justify-content:center;
     gap:3px;padding:9px 2px;border-right:1px solid #2a4a30;
@@ -203,13 +209,17 @@
   .slide-old{position:absolute;top:0;left:0;width:100%;}
   .slide-peek{position:absolute;top:0;left:0;width:100%;}
 
-  .range-label .current-period-dot{
+  .range-label .current-period-dot,
+  .shop-tile-name .current-period-dot{
     display:inline-block;width:11px;height:11px;border-radius:50%;background:#4a7a53;
     vertical-align:middle;position:relative;
     animation:periodDotPulse 1.8s ease-out infinite;
   }
   .range-label .current-period-dot.dot-left{margin-right:11px;margin-bottom:2px;}
   .range-label .current-period-dot.dot-right{margin-left:11px;margin-bottom:2px;}
+  .shop-tile-name .current-period-dot{width:6px;height:6px;}
+  .shop-tile-name .current-period-dot.dot-left{margin-right:4px;margin-bottom:1px;}
+  .shop-tile-name .current-period-dot.dot-right{margin-left:4px;margin-bottom:1px;}
   @keyframes periodDotPulse{
     0%{box-shadow:0 0 0 0 rgba(74,122,83,0.55);}
     70%{box-shadow:0 0 0 8px rgba(74,122,83,0);}
@@ -217,21 +227,24 @@
   }
 
   .view-row{
-    display:flex;align-items:center;justify-content:space-evenly;gap:10px;
-    padding:5px 14px;flex-wrap:wrap;row-gap:8px;
+    display:flex;align-items:center;justify-content:space-between;gap:4px;
+    padding:5px 8px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
   }
-  .view-select{display:flex;align-items:center;gap:6px;color:#a3adc2;font-size:14px;font-weight:600;order:1;}
-  .row-label{color:#a3adc2;font-size:14px;font-weight:600;}
+  .view-row::-webkit-scrollbar{display:none;}
+  .view-row > *{flex:none;}
+  .view-select{display:flex;align-items:center;gap:4px;color:#a3adc2;font-size:12px;font-weight:600;order:1;white-space:nowrap;}
+  .row-label{color:#a3adc2;font-size:12px;font-weight:600;white-space:nowrap;}
   .view-toggle{
     display:flex;align-items:center;justify-content:center;
-    width:28px;height:24px;background:#000000;border:1.5px solid #4a7a53;
-    color:var(--text);border-radius:6px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;
+    width:24px;height:22px;background:#000000;border:1.5px solid #4a7a53;
+    color:var(--text);border-radius:6px;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer;
   }
   .view-toggle:active{background:var(--surface-2);}
   .sort-by-label{
-    font-size:12.5px;color:var(--text);font-weight:700;white-space:nowrap;order:3;
+    font-size:11px;color:var(--text);font-weight:700;white-space:nowrap;order:3;
     background:#000000;border:1.5px solid #4a7a53;border-radius:6px;
-    font-family:inherit;cursor:pointer;padding:3px 8px;
+    font-family:inherit;cursor:pointer;padding:2px 6px;
   }
   .tag-filter-chip{
     display:flex;align-items:center;gap:6px;background:#000000;border:1.5px solid var(--blue);
@@ -240,7 +253,7 @@
     margin:7px 14px 0;
   }
   .tag-filter-chip #tagFilterLabel{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .view-toggle-wide{width:auto;padding:0 8px;}
+  .view-toggle-wide{width:auto;padding:0 6px;}
   .tag-filter-chip #tagFilterClearBtn{
     background:var(--blue);color:#fff;border:none;width:17px;height:17px;border-radius:50%;
     font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;
@@ -248,8 +261,9 @@
   .view-toggle-standalone{order:2;}
 
 
-  .list-filter-wrap{position:relative;order:2;display:flex;align-items:center;gap:6px;}
-  .sort-by-wrap{position:relative;order:3;display:flex;align-items:center;gap:6px;}
+  .list-filter-wrap{position:relative;order:2;display:flex;align-items:center;gap:4px;}
+  .sort-by-wrap{position:relative;order:3;display:flex;align-items:center;gap:4px;}
+  .shop-view-mode-wrap{position:relative;order:4;display:flex;align-items:center;gap:4px;}
   .list-filter-menu{
     position:absolute;top:28px;left:0;z-index:40;display:flex;flex-direction:column;gap:6px;
     opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .15s ease,transform .15s ease;
@@ -338,7 +352,12 @@
   .acct-bar.acct-bar-bank{background:var(--bank-green);}
   .acct-bar.acct-bar-affirm{background:var(--affirm-bright);}
   .tx-main{flex:1;min-width:0;}
-  .tx-label{font-weight:700;font-size:15.5px;color:var(--text);line-height:1.25;display:flex;align-items:center;gap:5px;}
+  .tx-label{font-weight:700;font-size:15.5px;color:var(--text);line-height:1.25;display:flex;align-items:center;gap:5px;min-width:0;}
+  /* The label's own text gets to shrink and ellipsize when a long name
+     (MarketPlace, a long bill name) wouldn't otherwise fit before the
+     amount column -- the repeat/monster badges stay full-size and visible
+     next to it instead of being pushed off or overlapped. */
+  .tx-label-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
   .repeat-badge{color:var(--text-faint);flex:none;}
   .txn-badge{
     display:inline-block;margin-left:6px;font-size:9px;font-weight:800;letter-spacing:.03em;
@@ -729,6 +748,105 @@
   .shop-pouch-row-icon svg{width:100%;height:100%;display:block;shape-rendering:crispEdges;}
   .shop-pouch-btn-icon{display:inline-flex;width:18px;height:18px;flex:none;}
   .shop-pouch-btn-icon svg{width:100%;height:100%;display:block;shape-rendering:crispEdges;}
+  /* Three staple shop locations (Marketplace/Stables/Tavern) as a row of
+     square tiles above the bill list, instead of regular rows -- icon,
+     name, gold left and the gold bar, no due date. Tapping one pops open
+     the same status-picker + action-menu a regular row gets. */
+  /* flex-wrap so a 4th+ tile (Guild Hall, future locations) drops to its
+     own row underneath Marketplace/Stables/Tavern instead of squeezing
+     all of them narrower in one line -- a tile-grouping grid, not a
+     horizontally-scrolling strip. */
+  .shop-tile-row{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px 4px;}
+  /* The tapped tile expands into a normal, full-width list-view row (plus
+     its status-picker/action-menu pair) instead of staying a small square
+     -- both need an explicit full-width flex-basis here since they're
+     flex ITEMS of this row-wrapping grid, not block children of a column
+     layout the way they are in the plain transaction list. Forcing them
+     to 100% also breaks the flex-wrap line right there, so any tiles
+     after the open one land on their own row underneath it instead of
+     next to it. */
+  .shop-tile-row > .tx-row,
+  .shop-tile-row > .status-picker-row,
+  .shop-tile-row > .action-menu-row{
+    flex:0 0 100%;width:100%;
+  }
+  .shop-tile{
+    flex:0 0 calc((100% - 12px)/3);min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;
+    background:#141f18;border:1px solid #2a4a30;border-radius:10px;padding:7px 4px 6px;
+    cursor:pointer;
+  }
+  .shop-tile:active{background:#1b2a20;}
+  .shop-tile.menu-active{
+    border-left:2px solid var(--blue);border-right:2px solid var(--blue);
+    border-top:2px solid var(--blue);border-bottom:none;
+    border-radius:10px 10px 0 0;position:relative;z-index:1;
+  }
+  .shop-tile-icon{width:28px;height:28px;flex:none;display:flex;align-items:center;justify-content:center;}
+  .shop-tile-icon svg{width:100%;height:100%;display:block;shape-rendering:crispEdges;}
+  .shop-tile-name{font-size:10px;font-weight:800;color:#f0c94d;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .shop-tile-gold{font-size:10px;font-weight:700;color:var(--text-dim);text-align:center;white-space:nowrap;}
+  .shop-tile-bar{width:100%;height:5px;}
+  /* Guild Hall tile reuses .shop-tile but its name/bar read blue instead
+     of gold-amber, since it isn't a Gold envelope -- subscriptions pull
+     straight from the real balance (HP), same as any other bill. */
+  .shop-tile.guild-hall-tile .shop-tile-name{color:#6f93e8;}
+  /* The Keep tile reuses .shop-tile the same way -- stone-gray name
+     instead of gold-amber or Guild Hall's blue. */
+  .shop-tile.keep-tile .shop-tile-name{color:#8a97a8;}
+  /* Boss Dungeon tile reuses .shop-tile the same way -- coral/red name,
+     matching the HP-bar red used for every boss elsewhere in the app. */
+  .shop-tile.dungeon-tile .shop-tile-name{color:var(--coral);}
+
+  /* Guild Hall sub-screen: the outer Guild Hall tile disappears and is
+     replaced by a slim bar spanning the same width as the Marketplace/
+     Stables/Tavern row, with the subscriptions underneath rendered as a
+     .shop-tile-row of ordinary .shop-tile tiles -- same icon size, same
+     name/amount/bar styling as every other location tile, no separate
+     look of their own. Tapping the bar again collapses back to normal.
+     Tapping a subscription tile still opens the usual status-picker +
+     action-menu (via buildRowMenusHTML), same pattern the outer row uses. */
+  .guild-hall-bar{
+    display:flex;align-items:center;justify-content:center;
+    padding:7px 12px;margin:2px 0 2px;
+    background:#000;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+    font-size:12px;font-weight:800;letter-spacing:.05em;color:#6f93e8;
+    cursor:pointer;
+    position:sticky;top:0;z-index:5;
+  }
+  .guild-hall-bar:active{background:#0a0f14;}
+  /* The Keep sub-screen -- identical mechanic to Guild Hall's, just a
+     stone-gray bar/name instead of blue. */
+  .keep-bar{
+    display:flex;align-items:center;justify-content:center;
+    padding:7px 12px;margin:2px 0 2px;
+    background:#000;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+    font-size:12px;font-weight:800;letter-spacing:.05em;color:#8a97a8;
+    cursor:pointer;
+    position:sticky;top:0;z-index:5;
+  }
+  .keep-bar:active{background:#0a0f14;}
+  /* Boss Dungeon sub-screen -- identical mechanic again, coral/red bar to
+     match the HP-bar theme. Each tile's icon is that boss's own portrait
+     (bossPortraitSVG), scaled into the same 28x28 slot every other tile
+     icon uses. */
+  .dungeon-bar{
+    display:flex;align-items:center;justify-content:center;
+    padding:7px 12px;margin:2px 0 2px;
+    background:#000;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+    font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--coral);
+    cursor:pointer;
+    position:sticky;top:0;z-index:5;
+  }
+  .dungeon-bar:active{background:#0a0f14;}
+  /* List View: Marketplace/Stables/Tavern pin as real rows (same
+     .tx-row template as everything else) at the top of the scrolling
+     list instead of disappearing into tiles -- same sticky treatment
+     the Guild Hall/Keep/Dungeon bars use, just wrapping rows instead of
+     a single label. */
+  .pinned-envelope-rows{
+    position:sticky;top:0;z-index:5;background:var(--bg);
+    border-bottom:1px solid var(--border);
+  }
   /* A Boss-linked bill gets its boss's portrait riding next to the name,
      the same slot the gold pouch uses for a Shop Envelope row, just a
      touch smaller since a face reads fine at a smaller size than the
@@ -1144,12 +1262,6 @@
   </div>
 
   <div id="transactionsView">
-    <div class="period-status-strip">
-      <div class="pss-item"><span class="pss-label">Unpaid</span><span class="pss-value pss-unpaid" id="pssUnpaid">$0.00</span></div>
-      <div class="pss-item"><span class="pss-label">Pending</span><span class="pss-value pss-pending-orange" id="pssPendingOrange">$0.00</span></div>
-      <div class="pss-item"><span class="pss-label">Ded.</span><span class="pss-value pss-pending-yellow" id="pssPendingYellow">$0.00</span></div>
-      <div class="pss-item"><span class="pss-label">Left</span><span class="pss-value" id="pssLeft">$0.00</span></div>
-    </div>
     <div class="sts-mini-bar">
       <div class="sts-mini-item">
         <span class="sts-mini-label" id="stsMiniAcctLabel">Account 1</span>
@@ -1176,7 +1288,7 @@
         <button class="view-toggle" id="viewToggle">1</button>
       </div>
       <div class="list-filter-wrap" id="listFilterWrap">
-        <span class="row-label">Bills/Txns:</span>
+        <span class="row-label">Type:</span>
         <button type="button" class="view-toggle view-toggle-wide" id="listFilterToggle">All</button>
         <div class="list-filter-menu" id="listFilterMenu">
           <button type="button" class="list-filter-option" data-filter="all">All</button>
@@ -1193,6 +1305,10 @@
           <button type="button" class="list-filter-option" data-sortcycle="tag">Tag</button>
         </div>
       </div>
+      <div class="shop-view-mode-wrap">
+        <span class="row-label">Layout:</span>
+        <button type="button" class="view-toggle view-toggle-wide" id="shopViewModeToggle">Tiles</button>
+      </div>
     </div>
 
     <div class="tx-count-bar" id="txCountBarRow" aria-label="Jump to current pay period">
@@ -1208,6 +1324,7 @@
       <button id="tagFilterClearBtn" aria-label="Clear tag filter">×</button>
     </div>
     <div class="tag-quick-bar" id="tagQuickBar" style="display:none;"></div>
+    <div id="shopTileRow"></div>
     <div class="tx-list" id="txList"><div id="txListInner"></div></div>
 
   </div>
@@ -1433,6 +1550,13 @@
   <div class="sheet reserve-sheet" style="display:flex;flex-direction:column;overflow:hidden;">
     <div class="sheet-handle"></div>
     <h2>Overview</h2>
+    <div class="section-label">This Period</div>
+    <div class="period-status-strip in-overview">
+      <div class="pss-item"><span class="pss-label">Unpaid</span><span class="pss-value pss-unpaid" id="pssUnpaid">$0.00</span></div>
+      <div class="pss-item"><span class="pss-label">Pending</span><span class="pss-value pss-pending-orange" id="pssPendingOrange">$0.00</span></div>
+      <div class="pss-item"><span class="pss-label">Ded.</span><span class="pss-value pss-pending-yellow" id="pssPendingYellow">$0.00</span></div>
+      <div class="pss-item"><span class="pss-label">Left</span><span class="pss-value" id="pssLeft">$0.00</span></div>
+    </div>
     <div class="tag-period-nav tag-period-nav-fixed">
       <button type="button" class="arrow-btn small" id="tagPeriodPrevBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
       <span class="tag-period-label" id="tagPeriodLabel"></span>
@@ -1636,6 +1760,19 @@
     <div class="field-note">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
       <span>Change the amount above if it's different from the bill, then pick a status below.</span>
+    </div>
+    <div class="field">
+      <label>Add Extra Damage (optional)</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="number" inputmode="decimal" step="0.01" id="payExtraInput" placeholder="0.00" style="flex:1;">
+        <button type="button" class="icon-btn" id="payExtraCalcBtn" aria-label="Open calculator" style="flex:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11.01"/><line x1="12" y1="11" x2="12" y2="11.01"/><line x1="16" y1="11" x2="16" y2="11.01"/><line x1="8" y1="15" x2="8" y2="15.01"/><line x1="12" y1="15" x2="12" y2="15.01"/><line x1="16" y1="15" x2="16" y2="18"/><line x1="8" y1="19" x2="12" y2="19.01"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="field-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <span>Type just the extra amount here -- it adds onto Amount Paid above for you (e.g. already paid $40, type 35 here to bring it to $75).</span>
     </div>
     <div class="status-icon-row" id="payStatusIconRow">
       <button class="status-icon-btn unpaid" data-set-status="unpaid" aria-label="Mark unpaid"><svg viewBox="0 0 24 24" fill="none" stroke="#0d1016" stroke-width="3" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
@@ -4617,6 +4754,77 @@ var qrcode = function() {
   }
   function envelopeKeyFor(t){ return t.seriesId || t.id; }
 
+  // Guild Hall -- the recurring subscriptions (Netflix, gym, etc.). Unlike
+  // Shop Envelopes these aren't a Gold budget: they're ordinary bills that
+  // pull straight from the real balance, just grouped visually by the
+  // "SUB" tag. Detected the same way any other tag filter is (case-
+  // insensitive, literal match), not by name.
+  function isGuildHallBill(t){
+    return !!(t && t.type !== "income" && !isShopEnvelope(t) &&
+      Array.isArray(t.tags) && t.tags.some(tag => typeof tag === "string" && tag.toLowerCase() === "sub"));
+  }
+  function guildStatusColor(t){
+    if(t.status === "paid") return "var(--green)";
+    if(t.status === "unpaid") return "var(--coral)";
+    if(t.status === "pending") return t.deducted ? "var(--pending-yellow)" : "var(--pending-orange)";
+    return "var(--text-dim)";
+  }
+  // Guild Hall is a subscription roster, not a period-scoped list -- each
+  // subscription bills on its own day of the month (Netflix the 6th,
+  // Planet Fitness the 17th, etc.), so a single 2-week pay period only
+  // ever catches 2-4 of them. This instead looks across every period and
+  // picks, per distinct subscription (by seriesId, falling back to label
+  // for one-offs), whichever single occurrence sits closest to today --
+  // so Guild Hall always shows all of them, each as its current cycle.
+  function guildHallCurrentBills(){
+    const today = toDateOnly(new Date());
+    const groups = {};
+    state.transactions.filter(isGuildHallBill).forEach(t => {
+      const key = t.seriesId || ("label:" + t.label.toLowerCase());
+      const diff = Math.abs(toDateOnly(parseISO(t.date)) - today);
+      if(!groups[key] || diff < groups[key].diff) groups[key] = { t, diff };
+    });
+    return Object.values(groups).map(g => g.t).sort((a,b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
+  }
+
+  // The Keep -- same tag-based roster mechanic as Guild Hall, just for
+  // "Essential" bills (insurance, utilities, phone/internet) instead of
+  // "SUB" subscriptions.
+  function isKeepBill(t){
+    return !!(t && t.type !== "income" && !isShopEnvelope(t) &&
+      Array.isArray(t.tags) && t.tags.some(tag => typeof tag === "string" && tag.toLowerCase() === "essential"));
+  }
+  function keepCurrentBills(){
+    const today = toDateOnly(new Date());
+    const groups = {};
+    state.transactions.filter(isKeepBill).forEach(t => {
+      const key = t.seriesId || ("label:" + t.label.toLowerCase());
+      const diff = Math.abs(toDateOnly(parseISO(t.date)) - today);
+      if(!groups[key] || diff < groups[key].diff) groups[key] = { t, diff };
+    });
+    return Object.values(groups).map(g => g.t).sort((a,b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
+  }
+
+  // Boss Dungeon -- same "cross-period roster" idea as Guild Hall/The Keep,
+  // but sourced from state.bosses (the HP-bar debt trackers) instead of a
+  // tag. Each boss with a linked bill series gets one tile: its portrait,
+  // its HP bar (balance vs startingBalance, same math the top Bosses shelf
+  // uses), and whichever upcoming payment against it sits nearest to today.
+  function dungeonCurrentEntries(){
+    const today = toDateOnly(new Date());
+    return state.bosses.filter(b => b.linkedKey).map(b => {
+      const linkedTxs = state.transactions.filter(t =>
+        t.type !== "income" && !isShopEnvelope(t) && (t.seriesId || t.id) === b.linkedKey);
+      if(!linkedTxs.length) return null;
+      let best = null, bestDiff = Infinity;
+      linkedTxs.forEach(t => {
+        const diff = Math.abs(toDateOnly(parseISO(t.date)) - today);
+        if(diff < bestDiff){ bestDiff = diff; best = t; }
+      });
+      return { boss: b, t: best };
+    }).filter(Boolean).sort((a,b) => a.t.date < b.t.date ? -1 : (a.t.date > b.t.date ? 1 : 0));
+  }
+
   // ---------- Staple Shop Envelopes ----------
   // The three starting "locations" every pay period opens with: Marketplace,
   // Stables (gas), Tavern (eating out) -- each a $0 gold envelope that's
@@ -5122,6 +5330,31 @@ var qrcode = function() {
 
   let openStatusPickerId = null;
   let openActionMenuId = null;
+  // Guild Hall doesn't pop up a separate screen -- tapping its tile swaps
+  // what the transaction list itself shows (subscriptions instead of
+  // bills), while the HP bar, account balances, date bar and every other
+  // chrome element stay exactly where they are. Tapping the tile again
+  // swaps back.
+  // The battle scene's opening random-monster roll, held here so the label
+  // listener can fall back to it (rather than re-rolling) whenever what's
+  // typed doesn't match an existing encounter name.
+  let txBattleRolledMonsterSVG = "";
+  let guildHallViewActive = false;
+  // Same in-place swap mechanic as Guild Hall, just for The Keep
+  // (Essential-tagged bills). Mutually exclusive with Guild Hall -- only
+  // one grid can be swapped in at a time.
+  let keepViewActive = false;
+  // Same mechanic again, for the Boss Dungeon -- mutually exclusive with
+  // both Guild Hall and The Keep.
+  let dungeonViewActive = false;
+  // Tile View (default) vs List View -- persisted the same way every other
+  // view preference is (state.settings, saved by the normal save() call).
+  // List View ungroups everything back to one flat list, sorted however
+  // the Sort control says, except Marketplace/Stables/Tavern, which pin as
+  // rows at the top instead of disappearing into tiles.
+  function shopViewMode(){
+    return (state.settings && state.settings.shopViewMode === "list") ? "list" : "tiles";
+  }
   const STATUS_PICKER_OPTIONS = [
     { key:"unpaid", cls:"unpaid", label:"Mark unpaid", lines:["Unpaid"], svg:'<svg viewBox="0 0 24 24" fill="none" stroke="#0d1016" stroke-width="3" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>' },
     { key:"pending", cls:"pending-orange", label:"Mark pending", lines:["Paid","Not Deducted"], svg:'<svg viewBox="0 0 24 24" fill="none" stroke="#0d1016" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14.5"/></svg>' },
@@ -5129,100 +5362,397 @@ var qrcode = function() {
     { key:"paid", cls:"paid", label:"Mark paid", lines:["Paid"], svg:'<svg viewBox="0 0 24 24" fill="none" stroke="#0d1016" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' }
   ];
 
+  // The three staple shop envelopes now show as tiles above the list
+  // (buildShopTileRowHTML) instead of as rows here -- pulled out so they
+  // don't show twice.
+  function buildShopTileRowHTML(){
+    // List View moves every tile (staples included) into the pinned/flat
+    // list instead -- nothing to show up here.
+    if(shopViewMode() === "list") return "";
+    const shopList = filteredSortedTx().filter(isShopEnvelope);
+    const guildBills = guildHallCurrentBills();
+    const keepBills = keepCurrentBills();
+    const dungeonEntries = dungeonCurrentEntries();
+    if(shopList.length === 0 && guildBills.length === 0 && keepBills.length === 0 && dungeonEntries.length === 0) return "";
+    const today = toDateOnly(new Date());
+    const tiles = shopList.map(t => {
+      const menuOpen = t.id === openStatusPickerId || t.id === openActionMenuId;
+      // Tapped open, it expands into the same full-width list-view row
+      // (and the same status-picker/action-menu pair riding right under
+      // it) instead of staying a small square tile -- so the menu lands
+      // exactly where you tapped, not stranded under the whole tile row.
+      if(menuOpen) return buildTxRowHTML(t, today);
+      const remaining = getEnvelopeRemaining(t);
+      const pct = Number(t.amount) > 0 ? Math.max(0, Math.min(100, (remaining / Number(t.amount)) * 100)) : 0;
+      const kind = shopEnvelopeKind(t);
+      return `<div class="shop-tile" data-shop-tile-id="${t.id}">
+        <span class="shop-tile-icon">${shopKindIconSVG(kind)}</span>
+        <div class="shop-tile-name">${escapeHtml(shopKindName(kind))}</div>
+        <div class="shop-tile-gold">${fmtMoney(remaining)} left</div>
+        <div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${pct}%;background:#f0c94d;"></div></div>
+      </div>`;
+    }).join("");
+    // Guild Hall is a grouping tile, not a Gold envelope -- its bar shows
+    // what fraction of all subscriptions are paid off. Tapping it swaps
+    // the transaction list to the subscriptions grid and the tile itself
+    // disappears (replaced there by the "Guild Hall" bar at the top of
+    // that grid) -- Marketplace/Stables/Tavern stay exactly as they are.
+    // The Keep tile also disappears while Guild Hall is open (and vice
+    // versa), so whichever bar is active sits right under the three gold
+    // tiles instead of leaving the other grouping tile stranded next to it.
+    let guildTile = "";
+    if(guildBills.length > 0 && !guildHallViewActive && !keepViewActive && !dungeonViewActive){
+      const guildTotal = guildBills.reduce((s,t) => s + effectiveAmount(t), 0);
+      const guildPaid = guildBills.filter(t => t.status === "paid").length;
+      const guildPct = Math.max(0, Math.min(100, (guildPaid / guildBills.length) * 100));
+      guildTile = `<div class="shop-tile guild-hall-tile" data-guild-hall-open="1">
+        <span class="shop-tile-icon">${guildHallIconSVG()}</span>
+        <div class="shop-tile-name">Guild Hall</div>
+        <div class="shop-tile-gold">${fmtMoney(guildTotal)} due</div>
+        <div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${guildPct}%;background:#3f6fd1;"></div></div>
+      </div>`;
+    }
+    // The Keep -- same grouping-tile treatment as Guild Hall, essential
+    // bills (insurance, utilities, phone/internet) instead of subscriptions.
+    let keepTile = "";
+    if(keepBills.length > 0 && !keepViewActive && !guildHallViewActive && !dungeonViewActive){
+      const keepTotal = keepBills.reduce((s,t) => s + effectiveAmount(t), 0);
+      const keepPaid = keepBills.filter(t => t.status === "paid").length;
+      const keepPct = Math.max(0, Math.min(100, (keepPaid / keepBills.length) * 100));
+      keepTile = `<div class="shop-tile keep-tile" data-keep-open="1">
+        <span class="shop-tile-icon">${keepIconSVG()}</span>
+        <div class="shop-tile-name">The Keep</div>
+        <div class="shop-tile-gold">${fmtMoney(keepTotal)} due</div>
+        <div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${keepPct}%;background:#8a97a8;"></div></div>
+      </div>`;
+    }
+    // Boss Dungeon -- same grouping-tile treatment again, but its bar
+    // shows what fraction of this cycle's boss payments are paid off, and
+    // its icon is a plain archway (each boss gets its own portrait once
+    // you're inside).
+    let dungeonTile = "";
+    if(dungeonEntries.length > 0 && !dungeonViewActive && !guildHallViewActive && !keepViewActive){
+      const dungeonTotal = dungeonEntries.reduce((s,e) => s + effectiveAmount(e.t), 0);
+      const dungeonPaid = dungeonEntries.filter(e => e.t.status === "paid").length;
+      const dungeonPct = Math.max(0, Math.min(100, (dungeonPaid / dungeonEntries.length) * 100));
+      dungeonTile = `<div class="shop-tile dungeon-tile" data-dungeon-open="1">
+        <span class="shop-tile-icon">${dungeonIconSVG()}</span>
+        <div class="shop-tile-name">Boss Dungeon</div>
+        <div class="shop-tile-gold">${fmtMoney(dungeonTotal)} due</div>
+        <div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${dungeonPct}%;background:var(--coral);"></div></div>
+      </div>`;
+    }
+    return `<div class="shop-tile-row">${tiles}${guildTile}${keepTile}${dungeonTile}</div>`;
+  }
+  function renderShopTileRow(){
+    $("#shopTileRow").innerHTML = buildShopTileRowHTML();
+  }
+
+  // ---------- Guild Hall sub-screen ----------
+  // A 3-across grid of every "SUB"-tagged bill in the current period, each
+  // its own tile. Tapping one opens the exact same status-picker +
+  // action-menu a normal row gets (buildRowMenusHTML), same pattern the
+  // outer shop-tile row already uses.
+  function buildGuildHallGridHTML(){
+    // "Current" = due within the pay period that contains TODAY, not
+    // whichever period you happen to be browsing -- so this reordering
+    // automatically shifts to a new set of subs once the real fortnight
+    // rolls over, regardless of what the date arrows above are showing.
+    const liveStart = periodStartContaining(new Date());
+    const liveEnd = periodEnd(liveStart);
+    const isLiveDue = t => {
+      const d = toDateOnly(parseISO(t.date));
+      return d >= liveStart && d <= liveEnd;
+    };
+    const bills = guildHallCurrentBills().slice().sort((a, b) => {
+      const aCur = isLiveDue(a) ? 0 : 1;
+      const bCur = isLiveDue(b) ? 0 : 1;
+      if(aCur !== bCur) return aCur - bCur;
+      return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0);
+    });
+    const bar = '<div class="guild-hall-bar" data-guild-hall-close="1">Guild Hall</div>';
+    if(bills.length === 0){
+      return bar + '<div class="reserve-stats-note">No subscriptions tagged "SUB" yet.</div>';
+    }
+    // Same pulsing green dot the date slider uses to flag "this is the
+    // live period" -- only lights up on a tile when you're browsing the
+    // pay period that contains TODAY (same test as the date slider's own
+    // dot), and only on the subs actually due within that fortnight.
+    // Browse to a past or future period and nothing lights up, since
+    // "this fortnight" hasn't happened/arrived yet for that view.
+    const showDots = isCurrentPeriodShown();
+    const { start: viewStart, end: viewEnd } = displayRange();
+    const today = toDateOnly(new Date());
+    // Same tile markup/classes as Marketplace/Stables/Tavern -- icon,
+    // name, amount, bottom bar -- just filled from each subscription's
+    // own status instead of a Gold envelope's remaining balance.
+    const statusPct = t => t.status === "paid" ? 100 : (t.status === "pending" ? (t.deducted ? 75 : 50) : 0);
+    const tiles = bills.map(t => {
+      const menuOpen = t.id === openStatusPickerId || t.id === openActionMenuId;
+      // Tapped open, it expands into the same full-width list-view row
+      // (with the status-picker/action-menu pair riding right under it)
+      // instead of staying a small square tile -- so the menu lands right
+      // where you tapped it, not stranded under the whole tile grid.
+      if(menuOpen) return buildTxRowHTML(t, today);
+      const d = toDateOnly(parseISO(t.date));
+      const inPeriod = showDots && d >= viewStart && d <= viewEnd;
+      const nameHTML = inPeriod
+        ? '<span class="current-period-dot dot-left"></span>' + escapeHtml(t.label) + '<span class="current-period-dot dot-right"></span>'
+        : escapeHtml(t.label);
+      return `<div class="shop-tile" data-guild-sub-id="${t.id}">
+        <span class="shop-tile-icon">${guildHallIconSVG()}</span>
+        <div class="shop-tile-name">${nameHTML}</div>
+        <div class="shop-tile-gold">${fmtMoney(effectiveAmount(t))}</div>
+        <div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${statusPct(t)}%;background:${guildStatusColor(t)};"></div></div>
+      </div>`;
+    }).join("");
+    return `${bar}<div class="shop-tile-row">${tiles}</div>`;
+  }
+
+  // ---------- The Keep sub-screen ----------
+  // Same exact mechanic as Guild Hall's grid, just for "Essential"-tagged
+  // bills (insurance, utilities, phone/internet) instead of "SUB".
+  function buildKeepGridHTML(){
+    const liveStart = periodStartContaining(new Date());
+    const liveEnd = periodEnd(liveStart);
+    const isLiveDue = t => {
+      const d = toDateOnly(parseISO(t.date));
+      return d >= liveStart && d <= liveEnd;
+    };
+    const bills = keepCurrentBills().slice().sort((a, b) => {
+      const aCur = isLiveDue(a) ? 0 : 1;
+      const bCur = isLiveDue(b) ? 0 : 1;
+      if(aCur !== bCur) return aCur - bCur;
+      return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0);
+    });
+    const bar = '<div class="keep-bar" data-keep-close="1">The Keep</div>';
+    if(bills.length === 0){
+      return bar + '<div class="reserve-stats-note">No bills tagged "Essential" yet.</div>';
+    }
+    const showDots = isCurrentPeriodShown();
+    const { start: viewStart, end: viewEnd } = displayRange();
+    const today = toDateOnly(new Date());
+    const statusPct = t => t.status === "paid" ? 100 : (t.status === "pending" ? (t.deducted ? 75 : 50) : 0);
+    const tiles = bills.map(t => {
+      const menuOpen = t.id === openStatusPickerId || t.id === openActionMenuId;
+      if(menuOpen) return buildTxRowHTML(t, today);
+      const d = toDateOnly(parseISO(t.date));
+      const inPeriod = showDots && d >= viewStart && d <= viewEnd;
+      const nameHTML = inPeriod
+        ? '<span class="current-period-dot dot-left"></span>' + escapeHtml(t.label) + '<span class="current-period-dot dot-right"></span>'
+        : escapeHtml(t.label);
+      return `<div class="shop-tile" data-keep-sub-id="${t.id}">
+        <span class="shop-tile-icon">${keepIconSVG()}</span>
+        <div class="shop-tile-name">${nameHTML}</div>
+        <div class="shop-tile-gold">${fmtMoney(effectiveAmount(t))}</div>
+        <div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${statusPct(t)}%;background:${guildStatusColor(t)};"></div></div>
+      </div>`;
+    }).join("");
+    return `${bar}<div class="shop-tile-row">${tiles}</div>`;
+  }
+
+  // ---------- Boss Dungeon sub-screen ----------
+  // Same grid mechanic again, but each tile is a boss: its own portrait
+  // for the icon, its HP bar (balance vs startingBalance -- full and red
+  // at the top, drains as payments chip it down, same math the HP-ghost
+  // animation on a boss row already uses) instead of a paid/unpaid bar,
+  // and tapping it still opens the usual status-picker + action-menu for
+  // whichever payment against it is currently due.
+  function buildDungeonGridHTML(){
+    const liveStart = periodStartContaining(new Date());
+    const liveEnd = periodEnd(liveStart);
+    const isLiveDue = e => {
+      const d = toDateOnly(parseISO(e.t.date));
+      return d >= liveStart && d <= liveEnd;
+    };
+    const entries = dungeonCurrentEntries().slice().sort((a, b) => {
+      const aCur = isLiveDue(a) ? 0 : 1;
+      const bCur = isLiveDue(b) ? 0 : 1;
+      if(aCur !== bCur) return aCur - bCur;
+      return a.t.date < b.t.date ? -1 : (a.t.date > b.t.date ? 1 : 0);
+    });
+    const bar = '<div class="dungeon-bar" data-dungeon-close="1">Boss Dungeon</div>';
+    if(entries.length === 0){
+      return bar + '<div class="reserve-stats-note">No bosses linked to a bill yet.</div>';
+    }
+    const showDots = isCurrentPeriodShown();
+    const { start: viewStart, end: viewEnd } = displayRange();
+    const today = toDateOnly(new Date());
+    const tiles = entries.map(e => {
+      const t = e.t, boss = e.boss;
+      const menuOpen = t.id === openStatusPickerId || t.id === openActionMenuId;
+      // buildTxRowHTML already renders a linked boss's own portrait + HP
+      // bar in place of the usual tag line, so the expanded row keeps
+      // showing this boss exactly the way the tile did, just full-width.
+      if(menuOpen) return buildTxRowHTML(t, today);
+      const d = toDateOnly(parseISO(t.date));
+      const inPeriod = showDots && d >= viewStart && d <= viewEnd;
+      const nameHTML = inPeriod
+        ? '<span class="current-period-dot dot-left"></span>' + escapeHtml(boss.name || "Unnamed") + '<span class="current-period-dot dot-right"></span>'
+        : escapeHtml(boss.name || "Unnamed");
+      const starting = Number(boss.startingBalance || 0);
+      const hpPct = starting > 0 ? Math.max(0, Math.min(100, (Number(boss.balance || 0) / starting) * 100)) : 0;
+      return `<div class="shop-tile" data-dungeon-sub-id="${t.id}">
+        <span class="shop-tile-icon dungeon-sub-icon">${bossPortraitSVG(boss)}</span>
+        <div class="shop-tile-name">${nameHTML}</div>
+        <div class="shop-tile-gold">${fmtMoney(effectiveAmount(t))}</div>
+        <div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${hpPct}%;background:var(--coral);"></div></div>
+      </div>`;
+    }).join("");
+    return `${bar}<div class="shop-tile-row">${tiles}</div>`;
+  }
+
   function buildTxListHTML(){
-    const list = filteredSortedTx();
+    if(guildHallViewActive){
+      const bills = guildHallCurrentBills();
+      return { html: buildGuildHallGridHTML(), count: bills.length };
+    }
+    if(dungeonViewActive){
+      const entries = dungeonCurrentEntries();
+      return { html: buildDungeonGridHTML(), count: entries.length };
+    }
+    if(keepViewActive){
+      const bills = keepCurrentBills();
+      return { html: buildKeepGridHTML(), count: bills.length };
+    }
+    if(shopViewMode() === "list"){
+      return buildFlatListModeHTML();
+    }
+    // Tile Mode's field is the "random encounter" map now -- Guild Hall,
+    // The Keep, Boss Dungeon and the Shop Envelopes are all buildings with
+    // their own tile, so only genuine Random Encounters (type "transaction")
+    // belong down here among the plain rows. A bill or income entry with
+    // no tile of its own (untagged, not boss-linked) won't show up in Tile
+    // Mode at all -- List Mode (the Layout toggle) still shows everything.
+    const list = filteredSortedTx().filter(t => t.type === "transaction");
     if(list.length === 0){
-      return { html: '<div class="empty-state">No transactions in this range.<br>Tap + Bill or + Income to add one.</div>', count: 0 };
+      return { html: '<div class="empty-state">No random encounters in this range.<br>Tap + Encounter to add one.</div>', count: 0 };
     }
     const today = toDateOnly(new Date());
-    const html = list.map(t => {
-      let amtClass, statusClass;
-      if(t.type === "income"){
-        amtClass = "income"; statusClass = t.status;
-      } else if(t.status === "unpaid"){
-        amtClass = toDateOnly(parseISO(t.date)) < today ? "unpaid-overdue" : "unpaid-upcoming";
-        statusClass = "unpaid";
-      } else if(t.status === "pending"){
-        amtClass = t.deducted ? "pending-yellow" : "pending-orange";
-        statusClass = amtClass;
-      } else {
-        amtClass = "paid"; statusClass = "paid";
-      }
-      const menuOpen = (t.id === openStatusPickerId && t.type !== "income") || (t.id === openActionMenuId);
-      // Account bar: a thin vertical stripe just left of the label that
-      // stands in for the account-name tag (purple = account 2, green =
-      // account 1), instead of printing the account name as a text chip.
-      const acctBarHTML = (accountCount() === 2 && t.type !== "income")
-        ? `<span class="acct-bar ${isAffirmTag(t.tags) ? "acct-bar-affirm" : "acct-bar-bank"}"></span>`
-        : "";
-      const shopEnvelope = isShopEnvelope(t);
-      // If this bill is linked to a Boss, its portrait rides next to the
-      // name the same way the gold pouch does for a Shop Envelope -- a
-      // visual tell of what kind of row this is before you even read it.
-      const bossKey = t.seriesId || t.id;
-      const linkedBoss = !shopEnvelope ? state.bosses.find(b => b.linkedKey && b.linkedKey === bossKey) : null;
-      return `<div class="tx-row${menuOpen ? " menu-active" : ""}${shopEnvelope ? " tx-row-shop" : ""}" data-id="${t.id}">
-        ${acctBarHTML}
-        ${shopEnvelope ? ('<span class="shop-pouch-row-icon" title="' + escapeHtml(shopKindName(shopEnvelopeKind(t))) + '">' + shopKindIconSVG(shopEnvelopeKind(t)) + '</span>') : ""}
-        ${linkedBoss ? ('<span class="boss-portrait-row-icon" title="' + escapeHtml(linkedBoss.name || "Boss") + '">' + bossPortraitSVG(linkedBoss) + '</span>') : ""}
-        <div class="tx-main">
-          <div class="tx-label ${amtClass}">${escapeHtml(t.label)}${t.seriesId ? `<span class="repeat-badge" title="${REPEAT_LABELS[t.repeat]||"Repeating"}">${REPEAT_ICON}</span>` : ""}${t.type === "transaction" ? `<span class="txn-monster-badge" title="${escapeHtml(t.label || "Transaction")}">${monsterIconSVGForLabel(t.label)}</span>` : ""}</div>
-          ${(() => {
-            // A Shop Envelope shows how much gold is left this period
-            // instead of the usual tag/description line -- same idea as
-            // the boss HP bar below, just for a spending budget instead
-            // of a debt balance. No dollar figure underneath -- the big
-            // pouch icon and the descending amount in the tx-amt column
-            // already say what's needed.
-            if(shopEnvelope){
-              const remaining = getEnvelopeRemaining(t);
-              const pct = Number(t.amount) > 0 ? Math.max(0, Math.min(100, (remaining / Number(t.amount)) * 100)) : 0;
-              return `<div class="tx-meta-line tx-shop-meta">
-                <div class="boss-hp-track tx-boss-hp-track"><div class="boss-hp-fill" style="width:${pct}%;background:#f0c94d;"></div></div>
-              </div>`;
-            }
-            // If this bill is linked to a Boss, show its mini HP bar in
-            // place of the usual tag chips -- the boss link is a stronger,
-            // more specific signal than a tag, so it takes over this line.
-            if(linkedBoss){
-              const starting = Number(linkedBoss.startingBalance || 0);
-              const bal = Number(linkedBoss.balance || 0);
-              const pct = starting > 0 ? Math.max(0, Math.min(100, (bal / starting) * 100)) : 0;
-              return `<div class="tx-meta-line tx-boss-meta">
-                <div class="boss-hp-track tx-boss-hp-track"><div class="boss-hp-fill" style="width:${pct}%;"></div><div class="boss-hp-ghost" data-ghost-for="${t.id}" style="width:0%;"></div></div>
-                <span class="tx-boss-balance">${fmtMoney(bal)}</span>
-              </div>`;
-            }
-            // The "TXN" auto-tag already shows as the badge next to the label,
-            // so it's left out of the tag list here to avoid showing it twice.
-            // The account name (Bank/Affirm) is now shown as the colored
-            // bar to the left instead of as a text chip here.
-            const rawTags = (Array.isArray(t.tags) ? t.tags : []).filter(tag => tag.toLowerCase() !== "txn");
-            const a1Name = account1Name(), a2Name = account2Name();
-            const visibleTags = rawTags.filter(tag => tag.toLowerCase() !== a1Name.toLowerCase() && tag.toLowerCase() !== a2Name.toLowerCase());
-            return (t.description || visibleTags.length) ? `<div class="tx-meta-line">${[
-              visibleTags.length ? visibleTags.map(tag => {
-                return `<span class="tx-tags-part">${escapeHtml(tag)}</span>`;
-              }).join('<span class="tx-tags-part"> · </span>') : "",
-              t.description ? `<span class="tx-desc-part">${escapeHtml(t.description)}</span>` : ""
-            ].filter(Boolean).join(' ')}</div>` : "";
-          })()}
-        </div>
-        <div class="tx-amt amt ${amtClass}">${shopEnvelope ? fmtMoney(getEnvelopeRemaining(t)) : fmtMoney(t.amount)}</div>
-        <div class="tx-status-zone">
-          <button class="status-btn ${statusClass}" data-status-id="${t.id}" aria-label="Toggle status">${statusIcon(t.status, t.deducted)}</button>
-          <div class="tx-date ${toDateOnly(parseISO(t.date)) <= today ? "date-past" : ""}">${fmtDate(parseISO(t.date), state.settings.dateFormat)}</div>
-        </div>
-      </div>${(t.id === openStatusPickerId && t.type !== "income") ? `<div class="status-picker-row menu-active" data-picker-for="${t.id}">${
-        STATUS_PICKER_OPTIONS.map(o => `<button type="button" class="status-icon-btn ${o.cls}" data-pick-status="${o.key}" aria-label="${o.label}">${o.svg}<span class="status-icon-lines">${o.lines.map(l => `<span>${l}</span>`).join("")}</span></button>`).join("")
-      }</div>` : ""}${(t.id === openActionMenuId) ? `<div class="action-menu-row menu-active" data-menu-for="${t.id}">${buildActionItemsHTML(t)}</div>` : ""}`;
-    }).join("");
+    const html = list.map(t => buildTxRowHTML(t, today)).join("");
     return { html, count: list.length };
+  }
+
+  // The actual per-row markup -- pulled out on its own so List View (which
+  // pins Marketplace/Stables/Tavern as rows instead of tiles) can render
+  // them with the exact same template every other row uses, rather than
+  // keeping a second copy in sync by hand.
+  function buildTxRowHTML(t, today){
+    let amtClass, statusClass;
+    if(t.type === "income"){
+      amtClass = "income"; statusClass = t.status;
+    } else if(t.status === "unpaid"){
+      amtClass = toDateOnly(parseISO(t.date)) < today ? "unpaid-overdue" : "unpaid-upcoming";
+      statusClass = "unpaid";
+    } else if(t.status === "pending"){
+      amtClass = t.deducted ? "pending-yellow" : "pending-orange";
+      statusClass = amtClass;
+    } else {
+      amtClass = "paid"; statusClass = "paid";
+    }
+    const menuOpen = (t.id === openStatusPickerId && t.type !== "income") || (t.id === openActionMenuId);
+    // Account bar: a thin vertical stripe just left of the label that
+    // stands in for the account-name tag (purple = account 2, green =
+    // account 1), instead of printing the account name as a text chip.
+    const acctBarHTML = (accountCount() === 2 && t.type !== "income")
+      ? `<span class="acct-bar ${isAffirmTag(t.tags) ? "acct-bar-affirm" : "acct-bar-bank"}"></span>`
+      : "";
+    const shopEnvelope = isShopEnvelope(t);
+    // If this bill is linked to a Boss, its portrait rides next to the
+    // name the same way the gold pouch does for a Shop Envelope -- a
+    // visual tell of what kind of row this is before you even read it.
+    const bossKey = t.seriesId || t.id;
+    const linkedBoss = !shopEnvelope ? state.bosses.find(b => b.linkedKey && b.linkedKey === bossKey) : null;
+    return `<div class="tx-row${menuOpen ? " menu-active" : ""}${shopEnvelope ? " tx-row-shop" : ""}" data-id="${t.id}">
+      ${acctBarHTML}
+      ${shopEnvelope ? ('<span class="shop-pouch-row-icon" title="' + escapeHtml(shopKindName(shopEnvelopeKind(t))) + '">' + shopKindIconSVG(shopEnvelopeKind(t)) + '</span>') : ""}
+      ${linkedBoss ? ('<span class="boss-portrait-row-icon" title="' + escapeHtml(linkedBoss.name || "Boss") + '">' + bossPortraitSVG(linkedBoss) + '</span>') : ""}
+      <div class="tx-main">
+        <div class="tx-label ${amtClass}"><span class="tx-label-text">${escapeHtml(t.label)}</span>${t.seriesId ? `<span class="repeat-badge" title="${REPEAT_LABELS[t.repeat]||"Repeating"}">${REPEAT_ICON}</span>` : ""}${t.type === "transaction" ? `<span class="txn-monster-badge" title="${escapeHtml(t.label || "Transaction")}">${monsterIconSVGForLabel(t.label)}</span>` : ""}</div>
+        ${(() => {
+          // A Shop Envelope shows how much gold is left this period
+          // instead of the usual tag/description line -- same idea as
+          // the boss HP bar below, just for a spending budget instead
+          // of a debt balance. No dollar figure underneath -- the big
+          // pouch icon and the descending amount in the tx-amt column
+          // already say what's needed.
+          if(shopEnvelope){
+            const remaining = getEnvelopeRemaining(t);
+            const pct = Number(t.amount) > 0 ? Math.max(0, Math.min(100, (remaining / Number(t.amount)) * 100)) : 0;
+            return `<div class="tx-meta-line tx-shop-meta">
+              <div class="boss-hp-track tx-boss-hp-track"><div class="boss-hp-fill" style="width:${pct}%;background:#f0c94d;"></div></div>
+            </div>`;
+          }
+          // If this bill is linked to a Boss, show its mini HP bar in
+          // place of the usual tag chips -- the boss link is a stronger,
+          // more specific signal than a tag, so it takes over this line.
+          if(linkedBoss){
+            const starting = Number(linkedBoss.startingBalance || 0);
+            const bal = Number(linkedBoss.balance || 0);
+            const pct = starting > 0 ? Math.max(0, Math.min(100, (bal / starting) * 100)) : 0;
+            return `<div class="tx-meta-line tx-boss-meta">
+              <div class="boss-hp-track tx-boss-hp-track"><div class="boss-hp-fill" style="width:${pct}%;"></div><div class="boss-hp-ghost" data-ghost-for="${t.id}" style="width:0%;"></div></div>
+              <span class="tx-boss-balance">${fmtMoney(bal)}</span>
+            </div>`;
+          }
+          // The "TXN" auto-tag already shows as the badge next to the label,
+          // so it's left out of the tag list here to avoid showing it twice.
+          // The account name (Bank/Affirm) is now shown as the colored
+          // bar to the left instead of as a text chip here.
+          const rawTags = (Array.isArray(t.tags) ? t.tags : []).filter(tag => tag.toLowerCase() !== "txn");
+          const a1Name = account1Name(), a2Name = account2Name();
+          const visibleTags = rawTags.filter(tag => tag.toLowerCase() !== a1Name.toLowerCase() && tag.toLowerCase() !== a2Name.toLowerCase());
+          return (t.description || visibleTags.length) ? `<div class="tx-meta-line">${[
+            visibleTags.length ? visibleTags.map(tag => {
+              return `<span class="tx-tags-part">${escapeHtml(tag)}</span>`;
+            }).join('<span class="tx-tags-part"> · </span>') : "",
+            t.description ? `<span class="tx-desc-part">${escapeHtml(t.description)}</span>` : ""
+          ].filter(Boolean).join(' ')}</div>` : "";
+        })()}
+      </div>
+      <div class="tx-amt amt ${amtClass}">${shopEnvelope ? fmtMoney(getEnvelopeRemaining(t)) : fmtMoney(t.amount)}</div>
+      <div class="tx-status-zone">
+        <button class="status-btn ${statusClass}" data-status-id="${t.id}" aria-label="Toggle status">${statusIcon(t.status, t.deducted)}</button>
+        <div class="tx-date ${toDateOnly(parseISO(t.date)) <= today ? "date-past" : ""}">${fmtDate(parseISO(t.date), state.settings.dateFormat)}</div>
+      </div>
+    </div>${buildRowMenusHTML(t)}`;
+  }
+
+  // ---------- List View ----------
+  // The original, pre-tile layout: everything ungrouped into one flat
+  // list (Guild Hall/The Keep/Boss Dungeon's bills just show up as normal
+  // rows, sorted however the Sort control says), except Marketplace/
+  // Stables/Tavern, which pin as rows at the very top instead of
+  // disappearing into tiles -- same sticky treatment the Guild Hall/Keep/
+  // Dungeon bars use, just holding real rows instead of a label.
+  function buildFlatListModeHTML(){
+    const today = toDateOnly(new Date());
+    const list = filteredSortedTx();
+    const envelopeList = list.filter(isShopEnvelope);
+    const restList = list.filter(t => !isShopEnvelope(t));
+    if(envelopeList.length === 0 && restList.length === 0){
+      return { html: '<div class="empty-state">No transactions in this range.<br>Tap + Bill or + Income to add one.</div>', count: 0 };
+    }
+    const pinnedHTML = envelopeList.length
+      ? `<div class="pinned-envelope-rows">${envelopeList.map(t => buildTxRowHTML(t, today)).join("")}</div>`
+      : "";
+    const restHTML = restList.map(t => buildTxRowHTML(t, today)).join("");
+    return { html: pinnedHTML + restHTML, count: envelopeList.length + restList.length };
+  }
+
+  // The status-picker + action-menu pair that drops down under a row once
+  // tapped -- factored out so a staple shop tile (which isn't a row at
+  // all) can pop open the exact same menu, "Visit the X" button included.
+  function buildRowMenusHTML(t){
+    return `${(t.id === openStatusPickerId && t.type !== "income") ? `<div class="status-picker-row menu-active" data-picker-for="${t.id}">${
+      STATUS_PICKER_OPTIONS.map(o => `<button type="button" class="status-icon-btn ${o.cls}" data-pick-status="${o.key}" aria-label="${o.label}">${o.svg}<span class="status-icon-lines">${o.lines.map(l => `<span>${l}</span>`).join("")}</span></button>`).join("")
+    }</div>` : ""}${(t.id === openActionMenuId) ? `<div class="action-menu-row menu-active" data-menu-for="${t.id}">${buildActionItemsHTML(t)}</div>` : ""}`;
   }
 
   function renderTxList(){
     const { html } = buildTxListHTML();
     $("#txListInner").innerHTML = html;
+    renderShopTileRow();
   }
 
   // After opening a row's status picker / action menu, make sure the whole
@@ -5578,6 +6108,7 @@ var qrcode = function() {
     renderTagQuickBar();
     renderFooter();
     $("#viewToggle").textContent = state.viewMode;
+    $("#shopViewModeToggle").textContent = shopViewMode() === "list" ? "List" : "Tiles";
     $("#listFilterToggle").textContent =
       state.listFilter === "bills" ? "Bills" : (state.listFilter === "txns" ? "Txns" : "All");
     $$(".list-filter-option[data-filter]").forEach(btn => {
@@ -6036,6 +6567,20 @@ var qrcode = function() {
     renderAll();
   });
 
+  $("#shopViewModeToggle").addEventListener("click", () => {
+    if(!state.settings) state.settings = {};
+    state.settings.shopViewMode = shopViewMode() === "list" ? "tiles" : "list";
+    // List View has no tiles to tap into a grid with, so make sure none
+    // of them are left swapped in if you switch away from Tile View while
+    // one was open.
+    guildHallViewActive = false;
+    keepViewActive = false;
+    dungeonViewActive = false;
+    openStatusPickerId = null;
+    openActionMenuId = null;
+    renderAll();
+  });
+
   $("#calPrevBtn").addEventListener("click", () => {
     const d = parseISO(state.calMonthISO);
     state.calMonthISO = fmtISO(addMonths(d, -1));
@@ -6209,6 +6754,15 @@ var qrcode = function() {
       currentTags = Array.isArray(t.tags) ? t.tags.slice() : [];
       renderTagChips();
       renderTagSuggestions();
+      // Setting #txLabel.value directly (above) doesn't fire the "input"
+      // event the battle scene listens for, and a straight re-roll would
+      // give a duplicate a different monster than the row it was copied
+      // from -- so for a Random Encounter duplicate, show that same
+      // deterministic monster immediately rather than leaving the fresh
+      // random roll from opening the sheet.
+      if(t.type === "transaction"){
+        $("#txBattleMonsterPortrait").innerHTML = monsterIconSVGForLabel(t.label);
+      }
     } else if(action === "showQR"){
       openQRCode(t.url);
     }
@@ -6465,6 +7019,11 @@ var qrcode = function() {
 
   // ---------- Payment confirm (pending -> paid) ----------
   let payConfirmTxId = null;
+  // The bill's amount at the moment the sheet opened -- "Add Extra Damage"
+  // always adds onto THIS fixed number, not whatever's currently sitting in
+  // Amount Paid, so typing 35 always means "40 plus 35", never compounding
+  // if the field gets recalculated more than once.
+  let payConfirmBaseAmount = 0;
 
   function isOutState(status, deducted){
     return status === "paid" || (status === "pending" && !!deducted);
@@ -6513,14 +7072,31 @@ var qrcode = function() {
     if(!t) return;
     hideUndoToast();
     payConfirmTxId = id;
+    payConfirmBaseAmount = Number(t.amount) || 0;
     $("#payConfirmLabel").textContent = t.label + "  ·  " + fmtDate(parseISO(t.date), state.settings.dateFormat);
     $("#payAmountInput").value = t.amount;
+    $("#payExtraInput").value = "";
     const activeKey = t.status === "paid" ? "paid" : t.status === "pending" && t.deducted ? "pending-deducted" : t.status === "pending" ? "pending" : "unpaid";
     $$("#payStatusIconRow .status-icon-btn").forEach(btn => {
       btn.classList.toggle("active", btn.dataset.setStatus === activeKey);
     });
     openSheet("payConfirmOverlay");
   }
+
+  // Typing in "Add Extra Damage" writes the sum straight into Amount Paid
+  // for you -- already paid $40, type 35 here, Amount Paid becomes $75 --
+  // so you don't have to do that math by hand. Editing Amount Paid directly
+  // still works exactly as before; the extra box is just a convenience on
+  // top of it, always computed from the bill's amount when the sheet opened.
+  $("#payExtraInput").addEventListener("input", () => {
+    const extra = parseFloat($("#payExtraInput").value);
+    const extraNum = isNaN(extra) ? 0 : extra;
+    $("#payAmountInput").value = round2(payConfirmBaseAmount + extraNum);
+  });
+  $("#payExtraCalcBtn").addEventListener("click", () => {
+    const startVal = $("#payExtraInput").value || "0";
+    openCalcForTarget("payExtraInput", startVal);
+  });
 
   $("#payCancelBtn").addEventListener("click", () => {
     payConfirmTxId = null;
@@ -6610,6 +7186,103 @@ var qrcode = function() {
     openCalcForTarget("txAmount", startVal);
   });
 
+  // A staple shop tile opens the same status-picker + action-menu a
+  // regular row gets (Edit / Edit Series / Delete / Duplicate, plus a
+  // "Visit the X" button to actually step into the shop) -- not a direct
+  // shortcut into the shop screen, so a tile is another way to edit the
+  // bill too.
+  $("#shopTileRow").addEventListener("click", (e) => {
+    const pickBtn = e.target.closest("[data-pick-status]");
+    if(pickBtn){
+      const pickerRow = pickBtn.closest(".status-picker-row");
+      const id = pickerRow.dataset.pickerFor;
+      const target = pickBtn.dataset.pickStatus;
+      openStatusPickerId = null;
+      openActionMenuId = null;
+      if(target === "paid"){
+        renderTxList();
+        openPayConfirm(id);
+      } else {
+        applyStatusTarget(id, target);
+      }
+      return;
+    }
+    const actionItem = e.target.closest("[data-action]");
+    if(actionItem){
+      const menuRow = actionItem.closest(".action-menu-row");
+      const id = menuRow.dataset.menuFor;
+      openActionMenuId = null;
+      openStatusPickerId = null;
+      renderTxList();
+      runRowAction(actionItem.dataset.action, id);
+      return;
+    }
+    const guildTile = e.target.closest("[data-guild-hall-open]");
+    if(guildTile){
+      // Not a separate screen -- the transaction list itself swaps to the
+      // subscriptions grid, same bars/balances/menus staying put. Tapping
+      // the tile again swaps back to the normal bill list.
+      guildHallViewActive = !guildHallViewActive;
+      keepViewActive = false;
+      dungeonViewActive = false;
+      openStatusPickerId = null;
+      openActionMenuId = null;
+      renderTxList();
+      return;
+    }
+    const keepTile = e.target.closest("[data-keep-open]");
+    if(keepTile){
+      keepViewActive = !keepViewActive;
+      guildHallViewActive = false;
+      dungeonViewActive = false;
+      openStatusPickerId = null;
+      openActionMenuId = null;
+      renderTxList();
+      return;
+    }
+    const dungeonTile = e.target.closest("[data-dungeon-open]");
+    if(dungeonTile){
+      dungeonViewActive = !dungeonViewActive;
+      guildHallViewActive = false;
+      keepViewActive = false;
+      openStatusPickerId = null;
+      openActionMenuId = null;
+      renderTxList();
+      return;
+    }
+    const tile = e.target.closest(".shop-tile");
+    if(tile){
+      const id = tile.dataset.shopTileId;
+      const isOpen = openStatusPickerId === id || openActionMenuId === id;
+      if(isOpen){
+        openStatusPickerId = null;
+        openActionMenuId = null;
+      } else {
+        openStatusPickerId = id;
+        openActionMenuId = id;
+      }
+      renderTxList();
+      if(!isOpen) scrollRowMenuIntoView(id);
+      return;
+    }
+    // The open tile renders full-width, list-view style (a plain .tx-row)
+    // instead of the small square tile -- same toggle-closed behavior,
+    // just keyed off its own data-id the way a normal list row is.
+    const row = e.target.closest(".tx-row");
+    if(!row) return;
+    const rowId = row.dataset.id;
+    const rowIsOpen = openStatusPickerId === rowId || openActionMenuId === rowId;
+    if(rowIsOpen){
+      openStatusPickerId = null;
+      openActionMenuId = null;
+    } else {
+      openStatusPickerId = rowId;
+      openActionMenuId = rowId;
+    }
+    renderTxList();
+    if(!rowIsOpen) scrollRowMenuIntoView(rowId);
+  });
+
   // Kept as a defensive no-op against iOS's native callout, though a plain tap
   // shouldn't trigger it in the first place now that long-press is gone.
   $("#txList").addEventListener("contextmenu", (e) => e.preventDefault());
@@ -6639,6 +7312,75 @@ var qrcode = function() {
       openStatusPickerId = null;
       renderTxList();
       runRowAction(actionItem.dataset.action, id);
+      return;
+    }
+    const guildBar = e.target.closest("[data-guild-hall-close]");
+    if(guildBar){
+      guildHallViewActive = false;
+      openStatusPickerId = null;
+      openActionMenuId = null;
+      renderTxList();
+      return;
+    }
+    const guildSubTile = e.target.closest("[data-guild-sub-id]");
+    if(guildSubTile){
+      const id = guildSubTile.dataset.guildSubId;
+      const isOpen = openStatusPickerId === id || openActionMenuId === id;
+      if(isOpen){
+        openStatusPickerId = null;
+        openActionMenuId = null;
+      } else {
+        openStatusPickerId = id;
+        openActionMenuId = id;
+      }
+      renderTxList();
+      if(!isOpen) scrollRowMenuIntoView(id);
+      return;
+    }
+    const keepBar = e.target.closest("[data-keep-close]");
+    if(keepBar){
+      keepViewActive = false;
+      openStatusPickerId = null;
+      openActionMenuId = null;
+      renderTxList();
+      return;
+    }
+    const keepSubTile = e.target.closest("[data-keep-sub-id]");
+    if(keepSubTile){
+      const id = keepSubTile.dataset.keepSubId;
+      const isOpen = openStatusPickerId === id || openActionMenuId === id;
+      if(isOpen){
+        openStatusPickerId = null;
+        openActionMenuId = null;
+      } else {
+        openStatusPickerId = id;
+        openActionMenuId = id;
+      }
+      renderTxList();
+      if(!isOpen) scrollRowMenuIntoView(id);
+      return;
+    }
+    const dungeonBar = e.target.closest("[data-dungeon-close]");
+    if(dungeonBar){
+      dungeonViewActive = false;
+      openStatusPickerId = null;
+      openActionMenuId = null;
+      renderTxList();
+      return;
+    }
+    const dungeonSubTile = e.target.closest("[data-dungeon-sub-id]");
+    if(dungeonSubTile){
+      const id = dungeonSubTile.dataset.dungeonSubId;
+      const isOpen = openStatusPickerId === id || openActionMenuId === id;
+      if(isOpen){
+        openStatusPickerId = null;
+        openActionMenuId = null;
+      } else {
+        openStatusPickerId = id;
+        openActionMenuId = id;
+      }
+      renderTxList();
+      if(!isOpen) scrollRowMenuIntoView(id);
       return;
     }
     const row = e.target.closest(".tx-row");
@@ -6919,7 +7661,8 @@ var qrcode = function() {
       $("#txBattleAmountSlot").appendChild(amountFieldWrap);
       amountDateRow.style.display = "none";
       scene.style.display = "";
-      $("#txBattleMonsterPortrait").innerHTML = randomMonsterSVG();
+      txBattleRolledMonsterSVG = rollFreshMonsterSVG();
+      $("#txBattleMonsterPortrait").innerHTML = txBattleRolledMonsterSVG;
       $("#txBattleSolPortrait").innerHTML = solPortraitSVG();
       // A simple read of this period's safe-to-spend (green) HP against Max
       // HP for Sol's own little bar -- same idea as the big bar up top, just
@@ -6950,6 +7693,28 @@ var qrcode = function() {
       scene.style.display = "none";
     }
   }
+
+  // While the battle scene is up, the monster starts as a genuine random
+  // roll (rollFreshMonsterSVG, picked the instant the screen opens, held in
+  // txBattleRolledMonsterSVG) and stays that way while you type a brand-new
+  // name -- no flicker on every keystroke. It only switches over, to that
+  // name's own fixed monster (the same one every saved row with that exact
+  // name already shows), once what's typed is an exact match for a name
+  // that's already been used in a saved Random Encounter. Back away from a
+  // match (edit the name further, or clear it) and it returns to the
+  // original roll rather than re-rolling or freezing on the matched one.
+  function labelMatchesExistingEncounter(label){
+    const key = label.trim().toLowerCase();
+    if(!key) return false;
+    return state.transactions.some(t => t.type === "transaction" && String(t.label || "").trim().toLowerCase() === key);
+  }
+  $("#txLabel").addEventListener("input", () => {
+    if($("#txBattleScene").style.display === "none") return;
+    const label = $("#txLabel").value;
+    $("#txBattleMonsterPortrait").innerHTML = labelMatchesExistingEncounter(label)
+      ? monsterIconSVGForLabel(label)
+      : txBattleRolledMonsterSVG;
+  });
 
   function openTxEditor(id, forcedTypeOrMode, modeIfId){
     let mode = "add";
@@ -7798,7 +8563,85 @@ var qrcode = function() {
         [1,1,0,1,1,1,1,0,1,1],
         [1,0,0,0,0,0,0,0,0,1],
         [0,0,0,0,0,0,0,0,0,0]
-      ], colors: {1:"#0a2a2e",2:"#2a9aa0",3:"#fff"} }
+      ], colors: {1:"#0a2a2e",2:"#2a9aa0",3:"#fff"} },
+    // Ghost -- pale blue-white, round top, wavy bottom, two dot eyes
+    { grid: [
+        [0,0,0,0,0,0,0,0,0,0],
+        [0,0,1,1,1,1,1,1,0,0],
+        [0,1,2,2,2,2,2,2,1,0],
+        [1,2,2,2,2,2,2,2,2,1],
+        [1,2,3,2,2,2,2,3,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [1,2,0,2,2,2,2,0,2,1],
+        [1,0,0,0,2,2,0,0,0,1]
+      ], colors: {1:"#1a2a33",2:"#cfeaf5",3:"#163040"} },
+    // Goblin -- small green humanoid, big pointy ears, sly grin
+    { grid: [
+        [0,0,0,0,1,1,0,0,0,0],
+        [0,0,1,1,2,2,1,1,0,0],
+        [0,1,2,2,2,2,2,2,1,0],
+        [1,2,2,3,2,2,3,2,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [1,2,4,4,2,2,4,4,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [0,1,2,2,2,2,2,2,1,0],
+        [0,0,1,2,2,2,2,1,0,0],
+        [0,0,0,1,1,1,1,0,0,0]
+      ], colors: {1:"#0a1f0a",2:"#5fae3f",3:"#102d10",4:"#eafff0"} },
+    // Wolf -- grey face, pointed ears, red eyes, sharp muzzle
+    { grid: [
+        [1,0,0,0,0,0,0,0,0,1],
+        [1,1,0,1,1,1,1,0,1,1],
+        [1,2,1,2,2,2,2,1,2,1],
+        [0,1,2,2,2,2,2,2,1,0],
+        [0,1,2,3,2,2,3,2,1,0],
+        [0,1,2,2,2,2,2,2,1,0],
+        [0,0,1,2,2,2,2,1,0,0],
+        [0,0,1,4,4,4,4,1,0,0],
+        [0,0,0,1,4,4,1,0,0,0],
+        [0,0,0,0,1,1,0,0,0,0]
+      ], colors: {1:"#0a0a0d",2:"#6b6f78",3:"#ff2d2d",4:"#d8dce0"} },
+    // Skeleton -- bone white, black eye sockets, ribcage lines
+    { grid: [
+        [0,0,1,1,1,1,1,1,0,0],
+        [0,1,2,2,2,2,2,2,1,0],
+        [1,2,3,2,2,2,2,3,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [1,2,4,2,2,2,2,4,2,1],
+        [1,2,4,2,2,2,2,4,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [0,1,2,4,2,2,4,2,1,0],
+        [0,0,1,2,2,2,2,1,0,0],
+        [0,0,0,1,1,1,1,0,0,0]
+      ], colors: {1:"#141414",2:"#ece6da",3:"#141414",4:"#b8b0a0"} },
+    // Mimic -- brown treasure-chest body with a toothy mouth, gold studs
+    { grid: [
+        [0,1,1,1,1,1,1,1,1,0],
+        [1,2,2,2,2,2,2,2,2,1],
+        [1,2,5,5,5,5,5,5,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [1,4,4,4,4,4,4,4,4,1],
+        [1,3,3,3,3,3,3,3,3,1],
+        [1,4,4,4,4,4,4,4,4,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [0,1,1,1,1,1,1,1,1,0]
+      ], colors: {1:"#1a0d05",2:"#8a5a2a",3:"#fff",4:"#1a0d05",5:"#f0c94d"} },
+    // Wisp -- floating flame/orb, purple-blue glow, tapering tail
+    { grid: [
+        [0,0,0,0,0,0,0,0,0,0],
+        [0,0,1,1,0,0,1,1,0,0],
+        [0,1,2,2,1,1,2,2,1,0],
+        [0,1,2,3,2,2,3,2,1,0],
+        [1,2,2,2,2,2,2,2,2,1],
+        [1,2,2,2,2,2,2,2,2,1],
+        [0,1,2,2,1,1,2,2,1,0],
+        [0,0,1,2,1,1,2,1,0,0],
+        [0,0,0,1,1,1,1,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0]
+      ], colors: {1:"#140a2e",2:"#8a6bff",3:"#efe8ff"} }
   ];
   function monsterVariantSVG(variant){
     let rects = "";
@@ -7817,6 +8660,24 @@ var qrcode = function() {
   function randomMonsterSVG(){
     const variant = ENCOUNTER_MONSTER_VARIANTS[Math.floor(Math.random() * ENCOUNTER_MONSTER_VARIANTS.length)];
     return monsterVariantSVG(variant);
+  }
+  // The battle-scene preview's opening roll avoids any monster that's
+  // already "claimed" by an existing Random Encounter name (so a fresh
+  // encounter doesn't open looking like a vendor you've already fought),
+  // falling back to the full pool only once every variant is already in use.
+  function rollFreshMonsterSVG(){
+    const used = new Set();
+    state.transactions.forEach(t => {
+      if(t.type === "transaction" && t.label){
+        used.add(ENCOUNTER_MONSTER_VARIANTS.indexOf(monsterVariantForLabel(t.label)));
+      }
+    });
+    const available = ENCOUNTER_MONSTER_VARIANTS
+      .map((_, i) => i)
+      .filter(i => !used.has(i));
+    const pool = available.length ? available : ENCOUNTER_MONSTER_VARIANTS.map((_, i) => i);
+    const idx = pool[Math.floor(Math.random() * pool.length)];
+    return monsterVariantSVG(ENCOUNTER_MONSTER_VARIANTS[idx]);
   }
   // The small monster badge shown on a saved Transaction row (replacing the
   // old plain "TXN" text) is picked deterministically from the transaction's
@@ -8060,6 +8921,91 @@ var qrcode = function() {
     if(kind === "stable") return shopStableIconSVG();
     if(kind === "tavern") return shopTavernIconSVG();
     return shopMarketIconSVG();
+  }
+
+  // Guild Hall -- a 4th location tile for recurring subscriptions (tagged
+  // "SUB"). Deliberately plain for now: just a pennant on a pole, blue
+  // instead of the gold-amber staples, since it isn't a Gold envelope --
+  // tapping it opens a grid of the individual subscriptions. Detailed
+  // per-subscription art can come later once the layout itself is settled.
+  const GUILD_HALL_GRID = [
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,"1","1","1","1","1","1","1","1","1","1",0,0],
+    [0,0,0,0,0,0,"1","P","P","F","F","F","F","F","F","1","1",0],
+    [0,0,0,0,0,0,"1","P","P","F","F","F","F","F","F","F","1",0],
+    [0,0,0,0,0,0,"1","P","P","F","F","F","F","F","F","F","1",0],
+    [0,0,0,0,0,0,"1","P","P","F","F","F","F","F","F","1","1",0],
+    [0,0,0,0,0,0,"1","P","P","F2","F2","F","F","F","1","1",0,0],
+    [0,0,0,0,0,0,"1","P","P","F2","F2","F","F","1","1",0,0,0],
+    [0,0,0,0,0,0,"1","P","P","F2","F2","1","1","1",0,0,0,0],
+    [0,0,0,0,0,0,"1","P","P","1","1","1",0,0,0,0,0,0],
+    [0,0,0,0,0,0,"1","P","P","1",0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,"1","P","P","1",0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,"1","P","P","1",0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,"1","P","P","1",0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,"1","P","P","1",0,0,0,0,0,0,0,0],
+    [0,0,0,0,"1","1","1","P","P","1","1","1",0,0,0,0,0,0],
+    [0,0,0,0,"1","P","P","P","P","P","P","1",0,0,0,0,0,0],
+    [0,0,0,0,"1","1","1","1","1","1","1","1",0,0,0,0,0,0]
+  ];
+  const GUILD_HALL_COLORS = { "1":"#140d08", "P":"#6b4226", "F":"#3f6fd1", "F2":"#2a4fa0" };
+  function guildHallIconSVG(){
+    return pixelGridSVG(GUILD_HALL_GRID, GUILD_HALL_COLORS);
+  }
+
+  // The Keep -- a small stone tower, stone-gray/blue so it reads distinct
+  // from Guild Hall's blue flag and the amber Marketplace/Stables/Tavern.
+  const KEEP_GRID = [
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,"1","1","1","1","1","1","1","1","1","1",0,0,0,0],
+    [0,0,0,0,"1","S","S","1","S","S","1","S","S","1",0,0,0,0],
+    [0,0,0,0,"1","S","S","1","S","S","1","S2","S2","1",0,0,0,0],
+    [0,0,0,0,"1","S","S","S","S","S","S","S2","S2","1",0,0,0,0],
+    [0,0,0,0,"1","S","S","S","S","S","S","S2","S2","1",0,0,0,0],
+    [0,0,0,0,"1","S","S","S","S","S","S","S2","S2","1",0,0,0,0],
+    [0,0,0,0,"1","S","S","S","S","S","S","S2","S2","1",0,0,0,0],
+    [0,0,0,0,"1","S","S","S","W","W","S","S2","S2","1",0,0,0,0],
+    [0,0,0,0,"1","S","S","S","W","W","S","S2","S2","1",0,0,0,0],
+    [0,0,0,0,"1","S","S","S","S","S","S","S2","S2","1",0,0,0,0],
+    [0,0,0,0,"1","S","S","S","D","D","S","S2","S2","1",0,0,0,0],
+    [0,0,0,0,"1","S","S","S","D","D","S","S2","S2","1",0,0,0,0],
+    [0,0,0,0,"1","1","1","1","1","1","1","1","1","1",0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  ];
+  const KEEP_COLORS = { "1":"#0d0f12", "S":"#8a97a8", "S2":"#5f6c7c", "W":"#2a4fa0", "D":"#3f2a1a" };
+  function keepIconSVG(){
+    return pixelGridSVG(KEEP_GRID, KEEP_COLORS);
+  }
+
+  // Boss Dungeon -- a plain stone archway for the outer tile; each boss's
+  // own portrait (bossPortraitSVG) is used once inside the grid, so this
+  // one just needs to read as "an entrance" at a glance.
+  const DUNGEON_GRID = [
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,"1","1","1","1","1","1","1","1","1","1",0,0,0,0],
+    [0,0,0,0,"1","G","G","G","G","G","G","G","G2","1",0,0,0,0],
+    [0,0,0,0,"1","G","G","G","G","G","G","G","G2","1",0,0,0,0],
+    [0,0,0,"1","1","1","G","B","B","B","B","G2","1","1","1",0,0,0],
+    [0,0,0,"1","G","G","G","B","B","B","B","G","G","G2","1",0,0,0],
+    [0,0,0,"1","G","G","G","B","B","B","B","G","G","G2","1",0,0,0],
+    [0,0,0,"1","G","G","G","B","B","B","B","G","G","G2","1",0,0,0],
+    [0,0,0,"1","G","G","G","B","B","B","B","G","G","G2","1",0,0,0],
+    [0,0,0,"1","G","G","G","B","B","B","B","G","G","G2","1",0,0,0],
+    [0,0,0,"1","G","G","G","B","B","B","B","G","G","G2","1",0,0,0],
+    [0,0,0,"1","G","G","G","B","B","B","B","G","G","G2","1",0,0,0],
+    [0,0,0,"1","G","G","G","B","B","B","B","G","G","G2","1",0,0,0],
+    [0,0,0,"1","G","G","G","B","B","B","B","G","G","G2","1",0,0,0],
+    [0,0,0,"1","G","G","G","B","B","B","B","G","G","G2","1",0,0,0],
+    [0,0,0,"1","1","1","1","1","1","1","1","1","1","1","1",0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  ];
+  const DUNGEON_COLORS = { "1":"#0d0f12", "G":"#6b5a52", "G2":"#453a35", "B":"#1a0e0e" };
+  function dungeonIconSVG(){
+    return pixelGridSVG(DUNGEON_GRID, DUNGEON_COLORS);
   }
 
   // A little teal potion bottle, shown to the left of the Potion input --
