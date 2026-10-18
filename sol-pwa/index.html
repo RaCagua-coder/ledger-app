@@ -158,7 +158,7 @@
   .hp-bar-track{position:relative;height:16px;border-radius:8px;background:#1c2b20;border:1px solid #2a4a30;display:flex;flex-direction:row-reverse;overflow:hidden;box-shadow:inset 0 2px 5px rgba(0,0,0,.7),inset 0 -1px 0 rgba(255,255,255,.04),0 1px 0 rgba(255,255,255,.03);}
   .hp-bar-track::before{content:"";position:absolute;top:1px;left:1px;right:1px;height:46%;border-radius:7px 7px 0 0;background:linear-gradient(to bottom,rgba(255,255,255,.4),rgba(255,255,255,0));pointer-events:none;z-index:2;}
   .hp-bar-track::after{content:"";position:absolute;inset:0;border-radius:8px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);pointer-events:none;z-index:3;}
-  .hp-bar-fill,.hp-bar-yellow,.hp-bar-ghost,.hp-bar-red,.hp-bar-black{
+  .hp-bar-fill,.hp-bar-yellow,.hp-bar-ghost,.hp-bar-red,.hp-bar-black,.hp-bar-gold{
     height:100%;flex:0 0 auto;width:0%;transition:width .4s ease;position:relative;
     background-image:linear-gradient(to bottom,rgba(255,255,255,.5) 0%,rgba(255,255,255,.15) 32%,rgba(255,255,255,0) 50%,rgba(0,0,0,.22) 100%);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -3px 4px rgba(0,0,0,.4),inset 1px 0 0 rgba(255,255,255,.08);
@@ -169,6 +169,13 @@
   .hp-bar-ghost{background-color:var(--pending-orange);}
   .hp-bar-red{background-color:var(--coral);}
   .hp-bar-black{background-color:#000;}
+  .hp-bar-gold{
+    background-color:#d4af37;
+    background-image:linear-gradient(118deg,#fff3c4 0%,#e8c250 18%,#b8860b 38%,#f4e3a1 52%,#9c7a1f 68%,#e8c250 84%,#fff3c4 100%),
+      linear-gradient(to bottom,rgba(255,255,255,.5) 0%,rgba(255,255,255,.15) 32%,rgba(255,255,255,0) 50%,rgba(0,0,0,.22) 100%);
+    background-blend-mode:normal,normal;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 -3px 4px rgba(0,0,0,.45),inset 1px 0 0 rgba(255,255,255,.2);
+  }
   .hp-bar-wrap.hp-critical .hp-bar-nums{color:var(--coral);}
 
   .sts-mini-bar{
@@ -190,6 +197,20 @@
   }
   .sts-mini-input:focus{outline:none;border-color:#4a7a53;}
   .sts-mini-input::placeholder{color:var(--text-faint);}
+  #alchemistBar{
+    margin:7px 12px 0;border-radius:8px;border:1px solid #2a4a30;
+    border-bottom:1px solid #2a4a30;overflow:hidden;
+  }
+  #alchemistBar .sts-mini-item{padding:2px 10px;}
+  #alchemistBar .sts-mini-value{font-size:13px;}
+  #alchemistBar .sts-mini-label{font-size:11px;}
+  #alchemistBar .sts-mini-input{font-size:16px;width:52px;}
+  .alchemist-icon{
+    display:inline-block;vertical-align:middle;width:13px;height:17px;
+    margin:0 2px -3px 0;
+  }
+  .alchemist-icon svg{width:100%;height:100%;display:block;shape-rendering:crispEdges;}
+  .alchemist-icon-lg{width:23px;height:29px;margin:0;}
   .date-bar{
     display:flex;align-items:center;justify-content:center;gap:10px;
     padding:8px 14px;background:#000000;
@@ -265,7 +286,12 @@
   .sort-by-wrap{position:relative;order:3;display:flex;align-items:center;gap:4px;}
   .shop-view-mode-wrap{position:relative;order:4;display:flex;align-items:center;gap:4px;}
   .list-filter-menu{
-    position:absolute;top:28px;left:0;z-index:40;display:flex;flex-direction:column;gap:6px;
+    /* Fixed (not absolute) so it isn't clipped by .view-row's
+       overflow-x:auto -- that scroll container also clips vertically
+       (setting overflow-x forces overflow-y to auto too), which was
+       cutting the dropdown off behind the paycheck/Alchemist bar right
+       underneath it. Position is set in JS right before it opens. */
+    position:fixed;top:0;left:0;z-index:40;display:flex;flex-direction:column;gap:6px;
     opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .15s ease,transform .15s ease;
     background:#000000;border:1.5px solid var(--blue);border-radius:8px;padding:6px;
     box-shadow:0 4px 14px rgba(0,0,0,.4);
@@ -735,6 +761,13 @@
   .tx-row.row-attacking{animation:rowAttackShake .95s ease-in-out;}
   .tx-row.row-attacking .tx-label{animation:rowAttackFlash .95s steps(1,end);}
   .tx-row.row-attacking .boss-hp-fill{animation:hpFillAttackFlash .95s steps(1,end);}
+  /* Same hit (shake + name flash + bar flash) for a Shop/Guild Hall/Keep/
+     Dungeon tile marked paid straight from its small square -- it stays a
+     tile for this (doesn't expand into a row first), so the shake/flash
+     need their own tile-flavored selectors instead of the .tx-row ones. */
+  .shop-tile.row-attacking{animation:rowAttackShake .95s ease-in-out;}
+  .shop-tile.row-attacking .shop-tile-name{animation:rowAttackFlash .95s steps(1,end);}
+  .shop-tile.row-attacking .boss-hp-fill{animation:hpFillAttackFlash .95s steps(1,end);}
   .boss-manage-empty{padding:20px 4px;text-align:center;color:var(--text-faint);font-size:13px;}
   .tx-boss-meta{display:flex;align-items:center;gap:6px;}
   .tx-boss-name{font-size:11px;font-weight:700;color:var(--coral);flex:none;}
@@ -776,6 +809,13 @@
     cursor:pointer;
   }
   .shop-tile:active{background:#1b2a20;}
+  /* Extra visual on top of the pulsing dot for a tile that's due in the
+     fortnight actually on screen -- a green outline square around the
+     whole tile, since the dot alone was too small to scan at a glance. */
+  .shop-tile.current-fortnight-tile{
+    border:2px solid var(--green);
+    box-shadow:0 0 0 1px rgba(0,199,0,.45), 0 0 8px rgba(0,199,0,.35);
+  }
   .shop-tile.menu-active{
     border-left:2px solid var(--blue);border-right:2px solid var(--blue);
     border-top:2px solid var(--blue);border-bottom:none;
@@ -784,8 +824,13 @@
   .shop-tile-icon{width:28px;height:28px;flex:none;display:flex;align-items:center;justify-content:center;}
   .shop-tile-icon svg{width:100%;height:100%;display:block;shape-rendering:crispEdges;}
   .shop-tile-name{font-size:10px;font-weight:800;color:#f0c94d;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-  .shop-tile-gold{font-size:10px;font-weight:700;color:var(--text-dim);text-align:center;white-space:nowrap;}
+  .shop-tile-gold{font-size:11px;font-weight:700;color:#fff;text-align:center;white-space:nowrap;}
   .shop-tile-bar{width:100%;height:5px;}
+  /* Guild Hall/Keep/Dungeon sub-tiles only: the name reads a bit bigger
+     than the staple envelope tiles, and a due-date line sits between the
+     name and the amount owed -- name, due date, amount, bar. */
+  .shop-tile-name-lg{font-size:12px;}
+  .shop-tile-due{font-size:10px;font-weight:600;color:#fff;text-align:center;white-space:nowrap;opacity:.9;}
   /* Guild Hall tile reuses .shop-tile but its name/bar read blue instead
      of gold-amber, since it isn't a Gold envelope -- subscriptions pull
      straight from the real balance (HP), same as any other bill. */
@@ -806,7 +851,7 @@
      Tapping a subscription tile still opens the usual status-picker +
      action-menu (via buildRowMenusHTML), same pattern the outer row uses. */
   .guild-hall-bar{
-    display:flex;align-items:center;justify-content:center;
+    display:flex;align-items:center;justify-content:center;gap:9px;
     padding:7px 12px;margin:2px 0 2px;
     background:#000;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
     font-size:12px;font-weight:800;letter-spacing:.05em;color:#6f93e8;
@@ -817,7 +862,7 @@
   /* The Keep sub-screen -- identical mechanic to Guild Hall's, just a
      stone-gray bar/name instead of blue. */
   .keep-bar{
-    display:flex;align-items:center;justify-content:center;
+    display:flex;align-items:center;justify-content:center;gap:9px;
     padding:7px 12px;margin:2px 0 2px;
     background:#000;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
     font-size:12px;font-weight:800;letter-spacing:.05em;color:#8a97a8;
@@ -830,7 +875,7 @@
      (bossPortraitSVG), scaled into the same 28x28 slot every other tile
      icon uses. */
   .dungeon-bar{
-    display:flex;align-items:center;justify-content:center;
+    display:flex;align-items:center;justify-content:center;gap:9px;
     padding:7px 12px;margin:2px 0 2px;
     background:#000;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
     font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--coral);
@@ -838,6 +883,12 @@
     position:sticky;top:0;z-index:5;
   }
   .dungeon-bar:active{background:#0a0f14;}
+  /* The same icon used on each sub-tile inside the building (not the
+     home-screen summary tile's icon, though for Guild Hall/Keep those
+     happen to be identical already), flanking the bar's title text on
+     both sides. */
+  .building-bar-icon{width:15px;height:15px;flex:none;display:flex;align-items:center;justify-content:center;}
+  .building-bar-icon svg{width:100%;height:100%;display:block;shape-rendering:crispEdges;}
   /* List View: Marketplace/Stables/Tavern pin as real rows (same
      .tx-row template as everything else) at the top of the scrolling
      list instead of disappearing into tiles -- same sticky treatment
@@ -896,9 +947,15 @@
   #txBattleDateSlot .field{margin-bottom:12px;}
 
   /* ---- Shop Envelope ("The Teller") ---- */
-  #shopOverlay .shop-sheet{display:flex;flex-direction:column;align-items:stretch;}
+  /* Same scrollable-body / fixed-footer pattern as #txOverlay and
+     #settingsOverlay -- the sheet itself stops scrolling as a whole, only
+     .shop-screen (everything above the buttons) does, so Check Out/Close
+     stay pinned to the bottom instead of scrolling away with the form. */
+  #shopOverlay .shop-sheet{display:flex;flex-direction:column;align-items:stretch;overflow:hidden;max-height:88vh;}
+  #shopOverlay .btn-row{flex:none;margin-top:0;}
   .shop-screen{
     display:flex;flex-direction:column;align-items:center;text-align:center;
+    flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;
     padding:18px 20px 6px;background:#1c1408;border:3px solid #7a5a1f;border-radius:10px;
     image-rendering:pixelated;box-shadow:inset 0 0 0 2px #3a2a0f;
   }
@@ -924,6 +981,17 @@
   .shop-sell-input-row{display:flex;gap:8px;align-items:stretch;}
   .shop-sell-input-row .shop-sell-input{flex:1;margin-bottom:0;}
   .shop-sell-btn{flex:none;padding:0 16px;font-size:13px;}
+  /* Paid with -- picking a card here instead of Cash/Debit is the only
+     thing that changes whether Check Out touches the real balance. */
+  .shop-paidwith-row{
+    width:100%;max-width:220px;margin:0 auto 14px;padding-top:12px;
+    border-top:1px dashed #7a5a1f;
+  }
+  .shop-paidwith-select{
+    width:100%;height:40px;text-align:center;font-size:14px;font-weight:700;
+    border-radius:8px;border:2px solid #7a5a1f;background:#0d0a04;color:var(--text);
+    padding:0 8px;font-family:inherit;
+  }
   /* Buy a Potion -- converts set-aside gold straight into spendable cash,
      without it ever leaving as a real purchase. Spends the gold (envelope
      remaining drops) but does NOT touch the real balance, so Outstanding
@@ -1185,6 +1253,13 @@
     65%{transform:scaleX(1) rotate(-7deg);opacity:1;}
     100%{transform:scaleX(1) rotate(-7deg);opacity:0;}
   }
+  /* Pending-deducted (yellow) gets a single lighter slash instead of the
+     green finishing blow's gold one-two combo -- same streak shape, amber
+     tint, no second pass. */
+  .hfx-slash-yellow{
+    background:linear-gradient(90deg, transparent, #fff3c0 10%, #f0c020 45%, #fff0a8 55%, #f0c020 70%, transparent);
+    box-shadow:0 0 13px 3px rgba(240,192,32,.75);
+  }
 
   /* Burst: radiating particles from the row that was paid */
   .hfx-particle{
@@ -1258,24 +1333,11 @@
       <div class="hp-bar-ghost" id="hpBarGhost"></div>
       <div class="hp-bar-yellow" id="hpBarYellow"></div>
       <div class="hp-bar-fill" id="hpBarFill"></div>
+      <div class="hp-bar-gold" id="hpBarGold" title="Alchemist's gold -- held reserve, last to take damage"></div>
     </div>
   </div>
 
   <div id="transactionsView">
-    <div class="sts-mini-bar">
-      <div class="sts-mini-item">
-        <span class="sts-mini-label" id="stsMiniAcctLabel">Account 1</span>
-        <span class="sts-mini-value" id="stsMiniAvailable">$0.00</span>
-      </div>
-      <div class="sts-mini-item">
-        <span class="sts-mini-label">Carry Over</span>
-        <input type="text" inputmode="decimal" id="carryoverInputTop" class="sts-mini-input" placeholder="0.00">
-      </div>
-      <div class="sts-mini-item">
-        <span class="sts-mini-label">Safe/Day</span>
-        <span class="sts-mini-value" id="stsMiniPerDay">$0.00</span>
-      </div>
-    </div>
     <div class="date-bar">
       <button class="arrow-btn" id="prevBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
       <div class="range-label-clip" id="rangeLabelClip"><div class="range-label" id="rangeLabel">–</div></div>
@@ -1318,6 +1380,20 @@
       </span>
       <span id="txCountBar">BILLS  $0.00</span>
       <span id="todayDateBar"></span>
+    </div>
+    <div class="sts-mini-bar" id="alchemistBar">
+      <div class="sts-mini-item">
+        <span class="sts-mini-label" id="stsMiniAcctLabel">Account 1</span>
+        <span class="sts-mini-value" id="stsMiniAvailable">$0.00</span>
+      </div>
+      <div class="sts-mini-item">
+        <span class="sts-mini-label"><span class="alchemist-icon alchemist-icon-lg"><svg viewBox="0 0 29 38" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect x="14" y="3" width="1" height="1" fill="#163257"/><rect x="15" y="3" width="1" height="1" fill="#141414"/><rect x="16" y="3" width="1" height="1" fill="#141414"/><rect x="20" y="3" width="1" height="1" fill="#141414"/><rect x="21" y="3" width="1" height="1" fill="#141414"/><rect x="22" y="3" width="1" height="1" fill="#141414"/><rect x="14" y="4" width="1" height="1" fill="#6b5420"/><rect x="15" y="4" width="1" height="1" fill="#6b5420"/><rect x="16" y="4" width="1" height="1" fill="#6b5420"/><rect x="17" y="4" width="1" height="1" fill="#163257"/><rect x="18" y="4" width="1" height="1" fill="#163257"/><rect x="19" y="4" width="1" height="1" fill="#163257"/><rect x="20" y="4" width="1" height="1" fill="#163257"/><rect x="21" y="4" width="1" height="1" fill="#163257"/><rect x="22" y="4" width="1" height="1" fill="#163257"/><rect x="23" y="4" width="1" height="1" fill="#163257"/><rect x="13" y="5" width="1" height="1" fill="#141414"/><rect x="14" y="5" width="1" height="1" fill="#d9b942"/><rect x="15" y="5" width="1" height="1" fill="#d9b942"/><rect x="16" y="5" width="1" height="1" fill="#ab8a3e"/><rect x="17" y="5" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="5" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="5" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="5" width="1" height="1" fill="#8a5fc0"/><rect x="21" y="5" width="1" height="1" fill="#8a5fc0"/><rect x="22" y="5" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="5" width="1" height="1" fill="#141414"/><rect x="24" y="5" width="1" height="1" fill="#163257"/><rect x="10" y="6" width="1" height="1" fill="#141414"/><rect x="14" y="6" width="1" height="1" fill="#141414"/><rect x="15" y="6" width="1" height="1" fill="#6b5420"/><rect x="16" y="6" width="1" height="1" fill="#d9b942"/><rect x="17" y="6" width="1" height="1" fill="#ab8a3e"/><rect x="18" y="6" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="6" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="6" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="6" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="6" width="1" height="1" fill="#6a3fa0"/><rect x="23" y="6" width="1" height="1" fill="#6a3fa0"/><rect x="24" y="6" width="1" height="1" fill="#141414"/><rect x="25" y="6" width="1" height="1" fill="#141414"/><rect x="10" y="7" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="7" width="1" height="1" fill="#ab8a3e"/><rect x="13" y="7" width="1" height="1" fill="#163257"/><rect x="14" y="7" width="1" height="1" fill="#6b5420"/><rect x="15" y="7" width="1" height="1" fill="#6b5420"/><rect x="16" y="7" width="1" height="1" fill="#d9b942"/><rect x="17" y="7" width="1" height="1" fill="#d9b942"/><rect x="18" y="7" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="7" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="7" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="7" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="7" width="1" height="1" fill="#6a3fa0"/><rect x="23" y="7" width="1" height="1" fill="#6a3fa0"/><rect x="24" y="7" width="1" height="1" fill="#141414"/><rect x="25" y="7" width="1" height="1" fill="#141414"/><rect x="9" y="8" width="1" height="1" fill="#141414"/><rect x="10" y="8" width="1" height="1" fill="#d9b942"/><rect x="11" y="8" width="1" height="1" fill="#6b5420"/><rect x="12" y="8" width="1" height="1" fill="#141414"/><rect x="13" y="8" width="1" height="1" fill="#141414"/><rect x="14" y="8" width="1" height="1" fill="#6b5420"/><rect x="15" y="8" width="1" height="1" fill="#ab8a3e"/><rect x="16" y="8" width="1" height="1" fill="#d9b942"/><rect x="17" y="8" width="1" height="1" fill="#d9b942"/><rect x="18" y="8" width="1" height="1" fill="#6a3fa0"/><rect x="19" y="8" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="8" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="8" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="8" width="1" height="1" fill="#6a3fa0"/><rect x="23" y="8" width="1" height="1" fill="#6a3fa0"/><rect x="24" y="8" width="1" height="1" fill="#141414"/><rect x="25" y="8" width="1" height="1" fill="#141414"/><rect x="10" y="9" width="1" height="1" fill="#141414"/><rect x="11" y="9" width="1" height="1" fill="#ab8a3e"/><rect x="12" y="9" width="1" height="1" fill="#d9b942"/><rect x="13" y="9" width="1" height="1" fill="#d9b942"/><rect x="14" y="9" width="1" height="1" fill="#d9b942"/><rect x="15" y="9" width="1" height="1" fill="#d9b942"/><rect x="16" y="9" width="1" height="1" fill="#d9b942"/><rect x="17" y="9" width="1" height="1" fill="#ab8a3e"/><rect x="18" y="9" width="1" height="1" fill="#ab8a3e"/><rect x="19" y="9" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="9" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="9" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="9" width="1" height="1" fill="#141414"/><rect x="23" y="9" width="1" height="1" fill="#6a3fa0"/><rect x="24" y="9" width="1" height="1" fill="#141414"/><rect x="25" y="9" width="1" height="1" fill="#141414"/><rect x="4" y="10" width="1" height="1" fill="#141414"/><rect x="5" y="10" width="1" height="1" fill="#141414"/><rect x="6" y="10" width="1" height="1" fill="#141414"/><rect x="7" y="10" width="1" height="1" fill="#141414"/><rect x="8" y="10" width="1" height="1" fill="#141414"/><rect x="9" y="10" width="1" height="1" fill="#141414"/><rect x="10" y="10" width="1" height="1" fill="#141414"/><rect x="11" y="10" width="1" height="1" fill="#141414"/><rect x="12" y="10" width="1" height="1" fill="#6a3fa0"/><rect x="13" y="10" width="1" height="1" fill="#d9b942"/><rect x="14" y="10" width="1" height="1" fill="#d9b942"/><rect x="15" y="10" width="1" height="1" fill="#d9b942"/><rect x="16" y="10" width="1" height="1" fill="#ab8a3e"/><rect x="17" y="10" width="1" height="1" fill="#6a3fa0"/><rect x="18" y="10" width="1" height="1" fill="#6a3fa0"/><rect x="19" y="10" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="10" width="1" height="1" fill="#141414"/><rect x="21" y="10" width="1" height="1" fill="#141414"/><rect x="22" y="10" width="1" height="1" fill="#141414"/><rect x="23" y="10" width="1" height="1" fill="#6a3fa0"/><rect x="24" y="10" width="1" height="1" fill="#141414"/><rect x="25" y="10" width="1" height="1" fill="#141414"/><rect x="4" y="11" width="1" height="1" fill="#141414"/><rect x="5" y="11" width="1" height="1" fill="#141414"/><rect x="6" y="11" width="1" height="1" fill="#141414"/><rect x="7" y="11" width="1" height="1" fill="#141414"/><rect x="8" y="11" width="1" height="1" fill="#141414"/><rect x="9" y="11" width="1" height="1" fill="#141414"/><rect x="10" y="11" width="1" height="1" fill="#141414"/><rect x="11" y="11" width="1" height="1" fill="#141414"/><rect x="12" y="11" width="1" height="1" fill="#6a3fa0"/><rect x="13" y="11" width="1" height="1" fill="#6a3fa0"/><rect x="14" y="11" width="1" height="1" fill="#d9b942"/><rect x="15" y="11" width="1" height="1" fill="#d9b942"/><rect x="16" y="11" width="1" height="1" fill="#ab8a3e"/><rect x="17" y="11" width="1" height="1" fill="#6a3fa0"/><rect x="18" y="11" width="1" height="1" fill="#6a3fa0"/><rect x="19" y="11" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="11" width="1" height="1" fill="#141414"/><rect x="21" y="11" width="1" height="1" fill="#141414"/><rect x="22" y="11" width="1" height="1" fill="#141414"/><rect x="23" y="11" width="1" height="1" fill="#6a3fa0"/><rect x="24" y="11" width="1" height="1" fill="#141414"/><rect x="25" y="11" width="1" height="1" fill="#141414"/><rect x="3" y="12" width="1" height="1" fill="#141414"/><rect x="4" y="12" width="1" height="1" fill="#25497f"/><rect x="5" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="6" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="8" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="9" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="10" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="11" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="12" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="13" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="14" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="15" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="16" y="12" width="1" height="1" fill="#6a3fa0"/><rect x="17" y="12" width="1" height="1" fill="#6a3fa0"/><rect x="18" y="12" width="1" height="1" fill="#6a3fa0"/><rect x="19" y="12" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="12" width="1" height="1" fill="#141414"/><rect x="21" y="12" width="1" height="1" fill="#141414"/><rect x="23" y="12" width="1" height="1" fill="#141414"/><rect x="24" y="12" width="1" height="1" fill="#163257"/><rect x="3" y="13" width="1" height="1" fill="#141414"/><rect x="4" y="13" width="1" height="1" fill="#3e6aad"/><rect x="5" y="13" width="1" height="1" fill="#8a5fc0"/><rect x="6" y="13" width="1" height="1" fill="#141414"/><rect x="7" y="13" width="1" height="1" fill="#141414"/><rect x="8" y="13" width="1" height="1" fill="#141414"/><rect x="9" y="13" width="1" height="1" fill="#141414"/><rect x="10" y="13" width="1" height="1" fill="#8a5fc0"/><rect x="11" y="13" width="1" height="1" fill="#8a5fc0"/><rect x="12" y="13" width="1" height="1" fill="#8a5fc0"/><rect x="13" y="13" width="1" height="1" fill="#8a5fc0"/><rect x="14" y="13" width="1" height="1" fill="#8a5fc0"/><rect x="15" y="13" width="1" height="1" fill="#8a5fc0"/><rect x="16" y="13" width="1" height="1" fill="#8a5fc0"/><rect x="17" y="13" width="1" height="1" fill="#6a3fa0"/><rect x="18" y="13" width="1" height="1" fill="#6a3fa0"/><rect x="19" y="13" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="13" width="1" height="1" fill="#141414"/><rect x="21" y="13" width="1" height="1" fill="#141414"/><rect x="4" y="14" width="1" height="1" fill="#141414"/><rect x="5" y="14" width="1" height="1" fill="#8a5fc0"/><rect x="6" y="14" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="14" width="1" height="1" fill="#141414"/><rect x="8" y="14" width="1" height="1" fill="#141414"/><rect x="9" y="14" width="1" height="1" fill="#141414"/><rect x="10" y="14" width="1" height="1" fill="#141414"/><rect x="11" y="14" width="1" height="1" fill="#141414"/><rect x="12" y="14" width="1" height="1" fill="#141414"/><rect x="13" y="14" width="1" height="1" fill="#8a5fc0"/><rect x="14" y="14" width="1" height="1" fill="#8a5fc0"/><rect x="15" y="14" width="1" height="1" fill="#8a5fc0"/><rect x="16" y="14" width="1" height="1" fill="#8a5fc0"/><rect x="17" y="14" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="14" width="1" height="1" fill="#6a3fa0"/><rect x="19" y="14" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="14" width="1" height="1" fill="#141414"/><rect x="21" y="14" width="1" height="1" fill="#141414"/><rect x="4" y="15" width="1" height="1" fill="#163257"/><rect x="5" y="15" width="1" height="1" fill="#163257"/><rect x="6" y="15" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="15" width="1" height="1" fill="#141414"/><rect x="8" y="15" width="1" height="1" fill="#141414"/><rect x="9" y="15" width="1" height="1" fill="#141414"/><rect x="10" y="15" width="1" height="1" fill="#141414"/><rect x="11" y="15" width="1" height="1" fill="#141414"/><rect x="12" y="15" width="1" height="1" fill="#141414"/><rect x="13" y="15" width="1" height="1" fill="#8a5fc0"/><rect x="14" y="15" width="1" height="1" fill="#8a5fc0"/><rect x="15" y="15" width="1" height="1" fill="#8a5fc0"/><rect x="16" y="15" width="1" height="1" fill="#8a5fc0"/><rect x="17" y="15" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="15" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="15" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="15" width="1" height="1" fill="#141414"/><rect x="21" y="15" width="1" height="1" fill="#141414"/><rect x="6" y="16" width="1" height="1" fill="#141414"/><rect x="7" y="16" width="1" height="1" fill="#8a5fc0"/><rect x="8" y="16" width="1" height="1" fill="#8a5fc0"/><rect x="9" y="16" width="1" height="1" fill="#141414"/><rect x="10" y="16" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="16" width="1" height="1" fill="#6b5420"/><rect x="12" y="16" width="1" height="1" fill="#141414"/><rect x="13" y="16" width="1" height="1" fill="#141414"/><rect x="14" y="16" width="1" height="1" fill="#141414"/><rect x="15" y="16" width="1" height="1" fill="#141414"/><rect x="16" y="16" width="1" height="1" fill="#8a5fc0"/><rect x="17" y="16" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="16" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="16" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="16" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="16" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="16" width="1" height="1" fill="#141414"/><rect x="7" y="17" width="1" height="1" fill="#141414"/><rect x="8" y="17" width="1" height="1" fill="#141414"/><rect x="9" y="17" width="1" height="1" fill="#141414"/><rect x="10" y="17" width="1" height="1" fill="#d9b942"/><rect x="11" y="17" width="1" height="1" fill="#6b5420"/><rect x="12" y="17" width="1" height="1" fill="#141414"/><rect x="13" y="17" width="1" height="1" fill="#141414"/><rect x="14" y="17" width="1" height="1" fill="#ab8a3e"/><rect x="15" y="17" width="1" height="1" fill="#ab8a3e"/><rect x="16" y="17" width="1" height="1" fill="#141414"/><rect x="17" y="17" width="1" height="1" fill="#141414"/><rect x="18" y="17" width="1" height="1" fill="#4a2a78"/><rect x="19" y="17" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="17" width="1" height="1" fill="#8a5fc0"/><rect x="21" y="17" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="17" width="1" height="1" fill="#6a3fa0"/><rect x="23" y="17" width="1" height="1" fill="#141414"/><rect x="24" y="17" width="1" height="1" fill="#163257"/><rect x="7" y="18" width="1" height="1" fill="#141414"/><rect x="8" y="18" width="1" height="1" fill="#141414"/><rect x="9" y="18" width="1" height="1" fill="#141414"/><rect x="10" y="18" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="18" width="1" height="1" fill="#6b5420"/><rect x="12" y="18" width="1" height="1" fill="#141414"/><rect x="13" y="18" width="1" height="1" fill="#141414"/><rect x="14" y="18" width="1" height="1" fill="#ab8a3e"/><rect x="15" y="18" width="1" height="1" fill="#ab8a3e"/><rect x="16" y="18" width="1" height="1" fill="#141414"/><rect x="17" y="18" width="1" height="1" fill="#141414"/><rect x="18" y="18" width="1" height="1" fill="#4a2a78"/><rect x="19" y="18" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="18" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="18" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="18" width="1" height="1" fill="#6a3fa0"/><rect x="23" y="18" width="1" height="1" fill="#141414"/><rect x="24" y="18" width="1" height="1" fill="#163257"/><rect x="25" y="18" width="1" height="1" fill="#163257"/><rect x="6" y="19" width="1" height="1" fill="#141414"/><rect x="7" y="19" width="1" height="1" fill="#4a2a78"/><rect x="8" y="19" width="1" height="1" fill="#4a2a78"/><rect x="9" y="19" width="1" height="1" fill="#141414"/><rect x="10" y="19" width="1" height="1" fill="#141414"/><rect x="11" y="19" width="1" height="1" fill="#141414"/><rect x="12" y="19" width="1" height="1" fill="#141414"/><rect x="13" y="19" width="1" height="1" fill="#141414"/><rect x="14" y="19" width="1" height="1" fill="#d9b942"/><rect x="15" y="19" width="1" height="1" fill="#d9b942"/><rect x="16" y="19" width="1" height="1" fill="#141414"/><rect x="17" y="19" width="1" height="1" fill="#141414"/><rect x="18" y="19" width="1" height="1" fill="#141414"/><rect x="19" y="19" width="1" height="1" fill="#141414"/><rect x="20" y="19" width="1" height="1" fill="#141414"/><rect x="21" y="19" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="19" width="1" height="1" fill="#6a3fa0"/><rect x="23" y="19" width="1" height="1" fill="#6a3fa0"/><rect x="24" y="19" width="1" height="1" fill="#141414"/><rect x="25" y="19" width="1" height="1" fill="#141414"/><rect x="4" y="20" width="1" height="1" fill="#141414"/><rect x="5" y="20" width="1" height="1" fill="#141414"/><rect x="6" y="20" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="20" width="1" height="1" fill="#141414"/><rect x="8" y="20" width="1" height="1" fill="#141414"/><rect x="9" y="20" width="1" height="1" fill="#141414"/><rect x="10" y="20" width="1" height="1" fill="#141414"/><rect x="11" y="20" width="1" height="1" fill="#141414"/><rect x="12" y="20" width="1" height="1" fill="#141414"/><rect x="13" y="20" width="1" height="1" fill="#141414"/><rect x="14" y="20" width="1" height="1" fill="#141414"/><rect x="15" y="20" width="1" height="1" fill="#141414"/><rect x="16" y="20" width="1" height="1" fill="#141414"/><rect x="17" y="20" width="1" height="1" fill="#6a3fa0"/><rect x="18" y="20" width="1" height="1" fill="#6a3fa0"/><rect x="19" y="20" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="20" width="1" height="1" fill="#141414"/><rect x="21" y="20" width="1" height="1" fill="#141414"/><rect x="22" y="20" width="1" height="1" fill="#141414"/><rect x="23" y="20" width="1" height="1" fill="#141414"/><rect x="24" y="20" width="1" height="1" fill="#141414"/><rect x="25" y="20" width="1" height="1" fill="#141414"/><rect x="4" y="21" width="1" height="1" fill="#141414"/><rect x="5" y="21" width="1" height="1" fill="#141414"/><rect x="6" y="21" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="21" width="1" height="1" fill="#4a2a78"/><rect x="8" y="21" width="1" height="1" fill="#4a2a78"/><rect x="9" y="21" width="1" height="1" fill="#141414"/><rect x="10" y="21" width="1" height="1" fill="#141414"/><rect x="11" y="21" width="1" height="1" fill="#141414"/><rect x="12" y="21" width="1" height="1" fill="#141414"/><rect x="13" y="21" width="1" height="1" fill="#141414"/><rect x="14" y="21" width="1" height="1" fill="#4a2a78"/><rect x="15" y="21" width="1" height="1" fill="#4a2a78"/><rect x="16" y="21" width="1" height="1" fill="#4a2a78"/><rect x="17" y="21" width="1" height="1" fill="#4a2a78"/><rect x="18" y="21" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="21" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="21" width="1" height="1" fill="#4a2a78"/><rect x="21" y="21" width="1" height="1" fill="#141414"/><rect x="22" y="21" width="1" height="1" fill="#141414"/><rect x="23" y="21" width="1" height="1" fill="#4a2a78"/><rect x="24" y="21" width="1" height="1" fill="#163257"/><rect x="25" y="21" width="1" height="1" fill="#163257"/><rect x="4" y="22" width="1" height="1" fill="#141414"/><rect x="5" y="22" width="1" height="1" fill="#141414"/><rect x="6" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="8" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="9" y="22" width="1" height="1" fill="#141414"/><rect x="10" y="22" width="1" height="1" fill="#141414"/><rect x="11" y="22" width="1" height="1" fill="#141414"/><rect x="12" y="22" width="1" height="1" fill="#141414"/><rect x="13" y="22" width="1" height="1" fill="#141414"/><rect x="14" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="15" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="16" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="17" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="21" y="22" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="22" width="1" height="1" fill="#141414"/><rect x="4" y="23" width="1" height="1" fill="#141414"/><rect x="5" y="23" width="1" height="1" fill="#141414"/><rect x="6" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="8" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="9" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="10" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="11" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="12" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="13" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="14" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="15" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="16" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="17" y="23" width="1" height="1" fill="#4a2a78"/><rect x="18" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="23" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="21" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="22" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="23" width="1" height="1" fill="#141414"/><rect x="24" y="23" width="1" height="1" fill="#163257"/><rect x="3" y="24" width="1" height="1" fill="#141414"/><rect x="5" y="24" width="1" height="1" fill="#d9b942"/><rect x="6" y="24" width="1" height="1" fill="#d9b942"/><rect x="7" y="24" width="1" height="1" fill="#163257"/><rect x="8" y="24" width="1" height="1" fill="#6a3fa0"/><rect x="9" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="10" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="11" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="12" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="13" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="14" y="24" width="1" height="1" fill="#4a2a78"/><rect x="15" y="24" width="1" height="1" fill="#6a3fa0"/><rect x="16" y="24" width="1" height="1" fill="#141414"/><rect x="17" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="24" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="24" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="24" width="1" height="1" fill="#141414"/><rect x="3" y="25" width="1" height="1" fill="#141414"/><rect x="4" y="25" width="1" height="1" fill="#d9b942"/><rect x="5" y="25" width="1" height="1" fill="#d9b942"/><rect x="6" y="25" width="1" height="1" fill="#d9b942"/><rect x="7" y="25" width="1" height="1" fill="#141414"/><rect x="8" y="25" width="1" height="1" fill="#141414"/><rect x="9" y="25" width="1" height="1" fill="#ab8a3e"/><rect x="10" y="25" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="25" width="1" height="1" fill="#ab8a3e"/><rect x="12" y="25" width="1" height="1" fill="#ab8a3e"/><rect x="13" y="25" width="1" height="1" fill="#ab8a3e"/><rect x="14" y="25" width="1" height="1" fill="#6a3fa0"/><rect x="15" y="25" width="1" height="1" fill="#163257"/><rect x="16" y="25" width="1" height="1" fill="#ab8a3e"/><rect x="17" y="25" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="25" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="25" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="25" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="25" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="25" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="25" width="1" height="1" fill="#141414"/><rect x="3" y="26" width="1" height="1" fill="#141414"/><rect x="6" y="26" width="1" height="1" fill="#d9b942"/><rect x="7" y="26" width="1" height="1" fill="#141414"/><rect x="8" y="26" width="1" height="1" fill="#141414"/><rect x="9" y="26" width="1" height="1" fill="#ab8a3e"/><rect x="10" y="26" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="26" width="1" height="1" fill="#ab8a3e"/><rect x="12" y="26" width="1" height="1" fill="#ab8a3e"/><rect x="13" y="26" width="1" height="1" fill="#ab8a3e"/><rect x="14" y="26" width="1" height="1" fill="#141414"/><rect x="15" y="26" width="1" height="1" fill="#141414"/><rect x="16" y="26" width="1" height="1" fill="#d9b942"/><rect x="17" y="26" width="1" height="1" fill="#d9b942"/><rect x="18" y="26" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="26" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="26" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="26" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="26" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="26" width="1" height="1" fill="#141414"/><rect x="24" y="26" width="1" height="1" fill="#163257"/><rect x="3" y="27" width="1" height="1" fill="#141414"/><rect x="4" y="27" width="1" height="1" fill="#25497f"/><rect x="5" y="27" width="1" height="1" fill="#4a2a78"/><rect x="6" y="27" width="1" height="1" fill="#141414"/><rect x="7" y="27" width="1" height="1" fill="#ab8a3e"/><rect x="8" y="27" width="1" height="1" fill="#ab8a3e"/><rect x="9" y="27" width="1" height="1" fill="#d9b942"/><rect x="10" y="27" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="27" width="1" height="1" fill="#d9b942"/><rect x="12" y="27" width="1" height="1" fill="#d9b942"/><rect x="13" y="27" width="1" height="1" fill="#d9b942"/><rect x="14" y="27" width="1" height="1" fill="#141414"/><rect x="15" y="27" width="1" height="1" fill="#141414"/><rect x="16" y="27" width="1" height="1" fill="#d9b942"/><rect x="17" y="27" width="1" height="1" fill="#d9b942"/><rect x="18" y="27" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="27" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="27" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="27" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="27" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="27" width="1" height="1" fill="#141414"/><rect x="24" y="27" width="1" height="1" fill="#163257"/><rect x="3" y="28" width="1" height="1" fill="#141414"/><rect x="4" y="28" width="1" height="1" fill="#3e6aad"/><rect x="5" y="28" width="1" height="1" fill="#b18ae0"/><rect x="6" y="28" width="1" height="1" fill="#141414"/><rect x="7" y="28" width="1" height="1" fill="#ab8a3e"/><rect x="8" y="28" width="1" height="1" fill="#ab8a3e"/><rect x="9" y="28" width="1" height="1" fill="#d9b942"/><rect x="10" y="28" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="28" width="1" height="1" fill="#d9b942"/><rect x="12" y="28" width="1" height="1" fill="#d9b942"/><rect x="13" y="28" width="1" height="1" fill="#d9b942"/><rect x="14" y="28" width="1" height="1" fill="#ab8a3e"/><rect x="15" y="28" width="1" height="1" fill="#ab8a3e"/><rect x="16" y="28" width="1" height="1" fill="#141414"/><rect x="17" y="28" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="28" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="28" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="28" width="1" height="1" fill="#141414"/><rect x="21" y="28" width="1" height="1" fill="#8a5fc0"/><rect x="22" y="28" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="28" width="1" height="1" fill="#141414"/><rect x="24" y="28" width="1" height="1" fill="#163257"/><rect x="3" y="29" width="1" height="1" fill="#141414"/><rect x="4" y="29" width="1" height="1" fill="#3e6aad"/><rect x="5" y="29" width="1" height="1" fill="#b18ae0"/><rect x="6" y="29" width="1" height="1" fill="#141414"/><rect x="7" y="29" width="1" height="1" fill="#ab8a3e"/><rect x="8" y="29" width="1" height="1" fill="#ab8a3e"/><rect x="9" y="29" width="1" height="1" fill="#d9b942"/><rect x="10" y="29" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="29" width="1" height="1" fill="#d9b942"/><rect x="12" y="29" width="1" height="1" fill="#d9b942"/><rect x="13" y="29" width="1" height="1" fill="#d9b942"/><rect x="14" y="29" width="1" height="1" fill="#ab8a3e"/><rect x="15" y="29" width="1" height="1" fill="#ab8a3e"/><rect x="16" y="29" width="1" height="1" fill="#141414"/><rect x="17" y="29" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="29" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="29" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="29" width="1" height="1" fill="#141414"/><rect x="21" y="29" width="1" height="1" fill="#8a5fc0"/><rect x="22" y="29" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="29" width="1" height="1" fill="#141414"/><rect x="24" y="29" width="1" height="1" fill="#163257"/><rect x="3" y="30" width="1" height="1" fill="#141414"/><rect x="4" y="30" width="1" height="1" fill="#25497f"/><rect x="5" y="30" width="1" height="1" fill="#b18ae0"/><rect x="6" y="30" width="1" height="1" fill="#141414"/><rect x="7" y="30" width="1" height="1" fill="#141414"/><rect x="8" y="30" width="1" height="1" fill="#141414"/><rect x="9" y="30" width="1" height="1" fill="#6b5420"/><rect x="10" y="30" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="30" width="1" height="1" fill="#ab8a3e"/><rect x="12" y="30" width="1" height="1" fill="#ab8a3e"/><rect x="13" y="30" width="1" height="1" fill="#ab8a3e"/><rect x="14" y="30" width="1" height="1" fill="#ab8a3e"/><rect x="15" y="30" width="1" height="1" fill="#ab8a3e"/><rect x="16" y="30" width="1" height="1" fill="#ab8a3e"/><rect x="17" y="30" width="1" height="1" fill="#6b5420"/><rect x="18" y="30" width="1" height="1" fill="#6b5420"/><rect x="19" y="30" width="1" height="1" fill="#141414"/><rect x="20" y="30" width="1" height="1" fill="#141414"/><rect x="21" y="30" width="1" height="1" fill="#8a5fc0"/><rect x="22" y="30" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="30" width="1" height="1" fill="#141414"/><rect x="24" y="30" width="1" height="1" fill="#163257"/><rect x="4" y="31" width="1" height="1" fill="#141414"/><rect x="5" y="31" width="1" height="1" fill="#141414"/><rect x="6" y="31" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="31" width="1" height="1" fill="#141414"/><rect x="8" y="31" width="1" height="1" fill="#141414"/><rect x="9" y="31" width="1" height="1" fill="#141414"/><rect x="10" y="31" width="1" height="1" fill="#141414"/><rect x="11" y="31" width="1" height="1" fill="#6b5420"/><rect x="12" y="31" width="1" height="1" fill="#6b5420"/><rect x="13" y="31" width="1" height="1" fill="#6b5420"/><rect x="14" y="31" width="1" height="1" fill="#6b5420"/><rect x="15" y="31" width="1" height="1" fill="#6b5420"/><rect x="16" y="31" width="1" height="1" fill="#6b5420"/><rect x="17" y="31" width="1" height="1" fill="#141414"/><rect x="18" y="31" width="1" height="1" fill="#141414"/><rect x="19" y="31" width="1" height="1" fill="#141414"/><rect x="20" y="31" width="1" height="1" fill="#141414"/><rect x="21" y="31" width="1" height="1" fill="#8a5fc0"/><rect x="22" y="31" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="31" width="1" height="1" fill="#141414"/><rect x="24" y="31" width="1" height="1" fill="#163257"/><rect x="4" y="32" width="1" height="1" fill="#163257"/><rect x="5" y="32" width="1" height="1" fill="#8a5fc0"/><rect x="6" y="32" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="32" width="1" height="1" fill="#141414"/><rect x="8" y="32" width="1" height="1" fill="#141414"/><rect x="9" y="32" width="1" height="1" fill="#141414"/><rect x="10" y="32" width="1" height="1" fill="#141414"/><rect x="11" y="32" width="1" height="1" fill="#4a2a78"/><rect x="12" y="32" width="1" height="1" fill="#4a2a78"/><rect x="13" y="32" width="1" height="1" fill="#4a2a78"/><rect x="14" y="32" width="1" height="1" fill="#4a2a78"/><rect x="15" y="32" width="1" height="1" fill="#4a2a78"/><rect x="16" y="32" width="1" height="1" fill="#4a2a78"/><rect x="17" y="32" width="1" height="1" fill="#4a2a78"/><rect x="18" y="32" width="1" height="1" fill="#4a2a78"/><rect x="19" y="32" width="1" height="1" fill="#141414"/><rect x="20" y="32" width="1" height="1" fill="#141414"/><rect x="21" y="32" width="1" height="1" fill="#8a5fc0"/><rect x="22" y="32" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="32" width="1" height="1" fill="#141414"/><rect x="24" y="32" width="1" height="1" fill="#163257"/><rect x="6" y="33" width="1" height="1" fill="#141414"/><rect x="7" y="33" width="1" height="1" fill="#141414"/><rect x="8" y="33" width="1" height="1" fill="#141414"/><rect x="9" y="33" width="1" height="1" fill="#141414"/><rect x="10" y="33" width="1" height="1" fill="#8a5fc0"/><rect x="11" y="33" width="1" height="1" fill="#8a5fc0"/><rect x="12" y="33" width="1" height="1" fill="#8a5fc0"/><rect x="13" y="33" width="1" height="1" fill="#8a5fc0"/><rect x="14" y="33" width="1" height="1" fill="#8a5fc0"/><rect x="15" y="33" width="1" height="1" fill="#8a5fc0"/><rect x="16" y="33" width="1" height="1" fill="#8a5fc0"/><rect x="17" y="33" width="1" height="1" fill="#4a2a78"/><rect x="18" y="33" width="1" height="1" fill="#163257"/><rect x="19" y="33" width="1" height="1" fill="#141414"/><rect x="20" y="33" width="1" height="1" fill="#141414"/><rect x="21" y="33" width="1" height="1" fill="#141414"/><rect x="22" y="33" width="1" height="1" fill="#141414"/><rect x="23" y="33" width="1" height="1" fill="#4a2a78"/><rect x="24" y="33" width="1" height="1" fill="#163257"/><rect x="25" y="33" width="1" height="1" fill="#141414"/><rect x="9" y="34" width="1" height="1" fill="#141414"/><rect x="10" y="34" width="1" height="1" fill="#141414"/><rect x="11" y="34" width="1" height="1" fill="#141414"/><rect x="12" y="34" width="1" height="1" fill="#141414"/><rect x="13" y="34" width="1" height="1" fill="#141414"/><rect x="14" y="34" width="1" height="1" fill="#141414"/><rect x="15" y="34" width="1" height="1" fill="#141414"/><rect x="16" y="34" width="1" height="1" fill="#141414"/><rect x="17" y="34" width="1" height="1" fill="#141414"/><rect x="18" y="34" width="1" height="1" fill="#141414"/><rect x="19" y="34" width="1" height="1" fill="#141414"/><rect x="20" y="34" width="1" height="1" fill="#141414"/><rect x="21" y="34" width="1" height="1" fill="#141414"/><rect x="22" y="34" width="1" height="1" fill="#141414"/><rect x="23" y="34" width="1" height="1" fill="#141414"/><rect x="24" y="34" width="1" height="1" fill="#163257"/></svg></span></span>
+        <input type="text" inputmode="decimal" id="carryoverInputTop" class="sts-mini-input" placeholder="0.00">
+      </div>
+      <div class="sts-mini-item">
+        <span class="sts-mini-label">Safe/Day</span>
+        <span class="sts-mini-value" id="stsMiniPerDay">$0.00</span>
+      </div>
     </div>
     <div class="tag-filter-chip" id="tagFilterChip" style="display:none;">
       <span id="tagFilterLabel">Filtering: </span>
@@ -1573,7 +1649,7 @@
           <span class="reserve-stat-value" id="stsAvailable">$0.00</span>
         </div>
         <div class="reserve-stat-row">
-          <span class="reserve-stat-label">Leave to carry over</span>
+          <span class="reserve-stat-label"><span class="alchemist-icon"><svg viewBox="0 0 29 38" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect x="14" y="3" width="1" height="1" fill="#163257"/><rect x="15" y="3" width="1" height="1" fill="#141414"/><rect x="16" y="3" width="1" height="1" fill="#141414"/><rect x="20" y="3" width="1" height="1" fill="#141414"/><rect x="21" y="3" width="1" height="1" fill="#141414"/><rect x="22" y="3" width="1" height="1" fill="#141414"/><rect x="14" y="4" width="1" height="1" fill="#6b5420"/><rect x="15" y="4" width="1" height="1" fill="#6b5420"/><rect x="16" y="4" width="1" height="1" fill="#6b5420"/><rect x="17" y="4" width="1" height="1" fill="#163257"/><rect x="18" y="4" width="1" height="1" fill="#163257"/><rect x="19" y="4" width="1" height="1" fill="#163257"/><rect x="20" y="4" width="1" height="1" fill="#163257"/><rect x="21" y="4" width="1" height="1" fill="#163257"/><rect x="22" y="4" width="1" height="1" fill="#163257"/><rect x="23" y="4" width="1" height="1" fill="#163257"/><rect x="13" y="5" width="1" height="1" fill="#141414"/><rect x="14" y="5" width="1" height="1" fill="#d9b942"/><rect x="15" y="5" width="1" height="1" fill="#d9b942"/><rect x="16" y="5" width="1" height="1" fill="#ab8a3e"/><rect x="17" y="5" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="5" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="5" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="5" width="1" height="1" fill="#8a5fc0"/><rect x="21" y="5" width="1" height="1" fill="#8a5fc0"/><rect x="22" y="5" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="5" width="1" height="1" fill="#141414"/><rect x="24" y="5" width="1" height="1" fill="#163257"/><rect x="10" y="6" width="1" height="1" fill="#141414"/><rect x="14" y="6" width="1" height="1" fill="#141414"/><rect x="15" y="6" width="1" height="1" fill="#6b5420"/><rect x="16" y="6" width="1" height="1" fill="#d9b942"/><rect x="17" y="6" width="1" height="1" fill="#ab8a3e"/><rect x="18" y="6" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="6" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="6" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="6" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="6" width="1" height="1" fill="#6a3fa0"/><rect x="23" y="6" width="1" height="1" fill="#6a3fa0"/><rect x="24" y="6" width="1" height="1" fill="#141414"/><rect x="25" y="6" width="1" height="1" fill="#141414"/><rect x="10" y="7" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="7" width="1" height="1" fill="#ab8a3e"/><rect x="13" y="7" width="1" height="1" fill="#163257"/><rect x="14" y="7" width="1" height="1" fill="#6b5420"/><rect x="15" y="7" width="1" height="1" fill="#6b5420"/><rect x="16" y="7" width="1" height="1" fill="#d9b942"/><rect x="17" y="7" width="1" height="1" fill="#d9b942"/><rect x="18" y="7" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="7" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="7" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="7" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="7" width="1" height="1" fill="#6a3fa0"/><rect x="23" y="7" width="1" height="1" fill="#6a3fa0"/><rect x="24" y="7" width="1" height="1" fill="#141414"/><rect x="25" y="7" width="1" height="1" fill="#141414"/><rect x="9" y="8" width="1" height="1" fill="#141414"/><rect x="10" y="8" width="1" height="1" fill="#d9b942"/><rect x="11" y="8" width="1" height="1" fill="#6b5420"/><rect x="12" y="8" width="1" height="1" fill="#141414"/><rect x="13" y="8" width="1" height="1" fill="#141414"/><rect x="14" y="8" width="1" height="1" fill="#6b5420"/><rect x="15" y="8" width="1" height="1" fill="#ab8a3e"/><rect x="16" y="8" width="1" height="1" fill="#d9b942"/><rect x="17" y="8" width="1" height="1" fill="#d9b942"/><rect x="18" y="8" width="1" height="1" fill="#6a3fa0"/><rect x="19" y="8" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="8" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="8" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="8" width="1" height="1" fill="#6a3fa0"/><rect x="23" y="8" width="1" height="1" fill="#6a3fa0"/><rect x="24" y="8" width="1" height="1" fill="#141414"/><rect x="25" y="8" width="1" height="1" fill="#141414"/><rect x="10" y="9" width="1" height="1" fill="#141414"/><rect x="11" y="9" width="1" height="1" fill="#ab8a3e"/><rect x="12" y="9" width="1" height="1" fill="#d9b942"/><rect x="13" y="9" width="1" height="1" fill="#d9b942"/><rect x="14" y="9" width="1" height="1" fill="#d9b942"/><rect x="15" y="9" width="1" height="1" fill="#d9b942"/><rect x="16" y="9" width="1" height="1" fill="#d9b942"/><rect x="17" y="9" width="1" height="1" fill="#ab8a3e"/><rect x="18" y="9" width="1" height="1" fill="#ab8a3e"/><rect x="19" y="9" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="9" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="9" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="9" width="1" height="1" fill="#141414"/><rect x="23" y="9" width="1" height="1" fill="#6a3fa0"/><rect x="24" y="9" width="1" height="1" fill="#141414"/><rect x="25" y="9" width="1" height="1" fill="#141414"/><rect x="4" y="10" width="1" height="1" fill="#141414"/><rect x="5" y="10" width="1" height="1" fill="#141414"/><rect x="6" y="10" width="1" height="1" fill="#141414"/><rect x="7" y="10" width="1" height="1" fill="#141414"/><rect x="8" y="10" width="1" height="1" fill="#141414"/><rect x="9" y="10" width="1" height="1" fill="#141414"/><rect x="10" y="10" width="1" height="1" fill="#141414"/><rect x="11" y="10" width="1" height="1" fill="#141414"/><rect x="12" y="10" width="1" height="1" fill="#6a3fa0"/><rect x="13" y="10" width="1" height="1" fill="#d9b942"/><rect x="14" y="10" width="1" height="1" fill="#d9b942"/><rect x="15" y="10" width="1" height="1" fill="#d9b942"/><rect x="16" y="10" width="1" height="1" fill="#ab8a3e"/><rect x="17" y="10" width="1" height="1" fill="#6a3fa0"/><rect x="18" y="10" width="1" height="1" fill="#6a3fa0"/><rect x="19" y="10" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="10" width="1" height="1" fill="#141414"/><rect x="21" y="10" width="1" height="1" fill="#141414"/><rect x="22" y="10" width="1" height="1" fill="#141414"/><rect x="23" y="10" width="1" height="1" fill="#6a3fa0"/><rect x="24" y="10" width="1" height="1" fill="#141414"/><rect x="25" y="10" width="1" height="1" fill="#141414"/><rect x="4" y="11" width="1" height="1" fill="#141414"/><rect x="5" y="11" width="1" height="1" fill="#141414"/><rect x="6" y="11" width="1" height="1" fill="#141414"/><rect x="7" y="11" width="1" height="1" fill="#141414"/><rect x="8" y="11" width="1" height="1" fill="#141414"/><rect x="9" y="11" width="1" height="1" fill="#141414"/><rect x="10" y="11" width="1" height="1" fill="#141414"/><rect x="11" y="11" width="1" height="1" fill="#141414"/><rect x="12" y="11" width="1" height="1" fill="#6a3fa0"/><rect x="13" y="11" width="1" height="1" fill="#6a3fa0"/><rect x="14" y="11" width="1" height="1" fill="#d9b942"/><rect x="15" y="11" width="1" height="1" fill="#d9b942"/><rect x="16" y="11" width="1" height="1" fill="#ab8a3e"/><rect x="17" y="11" width="1" height="1" fill="#6a3fa0"/><rect x="18" y="11" width="1" height="1" fill="#6a3fa0"/><rect x="19" y="11" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="11" width="1" height="1" fill="#141414"/><rect x="21" y="11" width="1" height="1" fill="#141414"/><rect x="22" y="11" width="1" height="1" fill="#141414"/><rect x="23" y="11" width="1" height="1" fill="#6a3fa0"/><rect x="24" y="11" width="1" height="1" fill="#141414"/><rect x="25" y="11" width="1" height="1" fill="#141414"/><rect x="3" y="12" width="1" height="1" fill="#141414"/><rect x="4" y="12" width="1" height="1" fill="#25497f"/><rect x="5" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="6" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="8" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="9" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="10" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="11" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="12" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="13" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="14" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="15" y="12" width="1" height="1" fill="#8a5fc0"/><rect x="16" y="12" width="1" height="1" fill="#6a3fa0"/><rect x="17" y="12" width="1" height="1" fill="#6a3fa0"/><rect x="18" y="12" width="1" height="1" fill="#6a3fa0"/><rect x="19" y="12" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="12" width="1" height="1" fill="#141414"/><rect x="21" y="12" width="1" height="1" fill="#141414"/><rect x="23" y="12" width="1" height="1" fill="#141414"/><rect x="24" y="12" width="1" height="1" fill="#163257"/><rect x="3" y="13" width="1" height="1" fill="#141414"/><rect x="4" y="13" width="1" height="1" fill="#3e6aad"/><rect x="5" y="13" width="1" height="1" fill="#8a5fc0"/><rect x="6" y="13" width="1" height="1" fill="#141414"/><rect x="7" y="13" width="1" height="1" fill="#141414"/><rect x="8" y="13" width="1" height="1" fill="#141414"/><rect x="9" y="13" width="1" height="1" fill="#141414"/><rect x="10" y="13" width="1" height="1" fill="#8a5fc0"/><rect x="11" y="13" width="1" height="1" fill="#8a5fc0"/><rect x="12" y="13" width="1" height="1" fill="#8a5fc0"/><rect x="13" y="13" width="1" height="1" fill="#8a5fc0"/><rect x="14" y="13" width="1" height="1" fill="#8a5fc0"/><rect x="15" y="13" width="1" height="1" fill="#8a5fc0"/><rect x="16" y="13" width="1" height="1" fill="#8a5fc0"/><rect x="17" y="13" width="1" height="1" fill="#6a3fa0"/><rect x="18" y="13" width="1" height="1" fill="#6a3fa0"/><rect x="19" y="13" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="13" width="1" height="1" fill="#141414"/><rect x="21" y="13" width="1" height="1" fill="#141414"/><rect x="4" y="14" width="1" height="1" fill="#141414"/><rect x="5" y="14" width="1" height="1" fill="#8a5fc0"/><rect x="6" y="14" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="14" width="1" height="1" fill="#141414"/><rect x="8" y="14" width="1" height="1" fill="#141414"/><rect x="9" y="14" width="1" height="1" fill="#141414"/><rect x="10" y="14" width="1" height="1" fill="#141414"/><rect x="11" y="14" width="1" height="1" fill="#141414"/><rect x="12" y="14" width="1" height="1" fill="#141414"/><rect x="13" y="14" width="1" height="1" fill="#8a5fc0"/><rect x="14" y="14" width="1" height="1" fill="#8a5fc0"/><rect x="15" y="14" width="1" height="1" fill="#8a5fc0"/><rect x="16" y="14" width="1" height="1" fill="#8a5fc0"/><rect x="17" y="14" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="14" width="1" height="1" fill="#6a3fa0"/><rect x="19" y="14" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="14" width="1" height="1" fill="#141414"/><rect x="21" y="14" width="1" height="1" fill="#141414"/><rect x="4" y="15" width="1" height="1" fill="#163257"/><rect x="5" y="15" width="1" height="1" fill="#163257"/><rect x="6" y="15" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="15" width="1" height="1" fill="#141414"/><rect x="8" y="15" width="1" height="1" fill="#141414"/><rect x="9" y="15" width="1" height="1" fill="#141414"/><rect x="10" y="15" width="1" height="1" fill="#141414"/><rect x="11" y="15" width="1" height="1" fill="#141414"/><rect x="12" y="15" width="1" height="1" fill="#141414"/><rect x="13" y="15" width="1" height="1" fill="#8a5fc0"/><rect x="14" y="15" width="1" height="1" fill="#8a5fc0"/><rect x="15" y="15" width="1" height="1" fill="#8a5fc0"/><rect x="16" y="15" width="1" height="1" fill="#8a5fc0"/><rect x="17" y="15" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="15" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="15" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="15" width="1" height="1" fill="#141414"/><rect x="21" y="15" width="1" height="1" fill="#141414"/><rect x="6" y="16" width="1" height="1" fill="#141414"/><rect x="7" y="16" width="1" height="1" fill="#8a5fc0"/><rect x="8" y="16" width="1" height="1" fill="#8a5fc0"/><rect x="9" y="16" width="1" height="1" fill="#141414"/><rect x="10" y="16" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="16" width="1" height="1" fill="#6b5420"/><rect x="12" y="16" width="1" height="1" fill="#141414"/><rect x="13" y="16" width="1" height="1" fill="#141414"/><rect x="14" y="16" width="1" height="1" fill="#141414"/><rect x="15" y="16" width="1" height="1" fill="#141414"/><rect x="16" y="16" width="1" height="1" fill="#8a5fc0"/><rect x="17" y="16" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="16" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="16" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="16" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="16" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="16" width="1" height="1" fill="#141414"/><rect x="7" y="17" width="1" height="1" fill="#141414"/><rect x="8" y="17" width="1" height="1" fill="#141414"/><rect x="9" y="17" width="1" height="1" fill="#141414"/><rect x="10" y="17" width="1" height="1" fill="#d9b942"/><rect x="11" y="17" width="1" height="1" fill="#6b5420"/><rect x="12" y="17" width="1" height="1" fill="#141414"/><rect x="13" y="17" width="1" height="1" fill="#141414"/><rect x="14" y="17" width="1" height="1" fill="#ab8a3e"/><rect x="15" y="17" width="1" height="1" fill="#ab8a3e"/><rect x="16" y="17" width="1" height="1" fill="#141414"/><rect x="17" y="17" width="1" height="1" fill="#141414"/><rect x="18" y="17" width="1" height="1" fill="#4a2a78"/><rect x="19" y="17" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="17" width="1" height="1" fill="#8a5fc0"/><rect x="21" y="17" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="17" width="1" height="1" fill="#6a3fa0"/><rect x="23" y="17" width="1" height="1" fill="#141414"/><rect x="24" y="17" width="1" height="1" fill="#163257"/><rect x="7" y="18" width="1" height="1" fill="#141414"/><rect x="8" y="18" width="1" height="1" fill="#141414"/><rect x="9" y="18" width="1" height="1" fill="#141414"/><rect x="10" y="18" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="18" width="1" height="1" fill="#6b5420"/><rect x="12" y="18" width="1" height="1" fill="#141414"/><rect x="13" y="18" width="1" height="1" fill="#141414"/><rect x="14" y="18" width="1" height="1" fill="#ab8a3e"/><rect x="15" y="18" width="1" height="1" fill="#ab8a3e"/><rect x="16" y="18" width="1" height="1" fill="#141414"/><rect x="17" y="18" width="1" height="1" fill="#141414"/><rect x="18" y="18" width="1" height="1" fill="#4a2a78"/><rect x="19" y="18" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="18" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="18" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="18" width="1" height="1" fill="#6a3fa0"/><rect x="23" y="18" width="1" height="1" fill="#141414"/><rect x="24" y="18" width="1" height="1" fill="#163257"/><rect x="25" y="18" width="1" height="1" fill="#163257"/><rect x="6" y="19" width="1" height="1" fill="#141414"/><rect x="7" y="19" width="1" height="1" fill="#4a2a78"/><rect x="8" y="19" width="1" height="1" fill="#4a2a78"/><rect x="9" y="19" width="1" height="1" fill="#141414"/><rect x="10" y="19" width="1" height="1" fill="#141414"/><rect x="11" y="19" width="1" height="1" fill="#141414"/><rect x="12" y="19" width="1" height="1" fill="#141414"/><rect x="13" y="19" width="1" height="1" fill="#141414"/><rect x="14" y="19" width="1" height="1" fill="#d9b942"/><rect x="15" y="19" width="1" height="1" fill="#d9b942"/><rect x="16" y="19" width="1" height="1" fill="#141414"/><rect x="17" y="19" width="1" height="1" fill="#141414"/><rect x="18" y="19" width="1" height="1" fill="#141414"/><rect x="19" y="19" width="1" height="1" fill="#141414"/><rect x="20" y="19" width="1" height="1" fill="#141414"/><rect x="21" y="19" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="19" width="1" height="1" fill="#6a3fa0"/><rect x="23" y="19" width="1" height="1" fill="#6a3fa0"/><rect x="24" y="19" width="1" height="1" fill="#141414"/><rect x="25" y="19" width="1" height="1" fill="#141414"/><rect x="4" y="20" width="1" height="1" fill="#141414"/><rect x="5" y="20" width="1" height="1" fill="#141414"/><rect x="6" y="20" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="20" width="1" height="1" fill="#141414"/><rect x="8" y="20" width="1" height="1" fill="#141414"/><rect x="9" y="20" width="1" height="1" fill="#141414"/><rect x="10" y="20" width="1" height="1" fill="#141414"/><rect x="11" y="20" width="1" height="1" fill="#141414"/><rect x="12" y="20" width="1" height="1" fill="#141414"/><rect x="13" y="20" width="1" height="1" fill="#141414"/><rect x="14" y="20" width="1" height="1" fill="#141414"/><rect x="15" y="20" width="1" height="1" fill="#141414"/><rect x="16" y="20" width="1" height="1" fill="#141414"/><rect x="17" y="20" width="1" height="1" fill="#6a3fa0"/><rect x="18" y="20" width="1" height="1" fill="#6a3fa0"/><rect x="19" y="20" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="20" width="1" height="1" fill="#141414"/><rect x="21" y="20" width="1" height="1" fill="#141414"/><rect x="22" y="20" width="1" height="1" fill="#141414"/><rect x="23" y="20" width="1" height="1" fill="#141414"/><rect x="24" y="20" width="1" height="1" fill="#141414"/><rect x="25" y="20" width="1" height="1" fill="#141414"/><rect x="4" y="21" width="1" height="1" fill="#141414"/><rect x="5" y="21" width="1" height="1" fill="#141414"/><rect x="6" y="21" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="21" width="1" height="1" fill="#4a2a78"/><rect x="8" y="21" width="1" height="1" fill="#4a2a78"/><rect x="9" y="21" width="1" height="1" fill="#141414"/><rect x="10" y="21" width="1" height="1" fill="#141414"/><rect x="11" y="21" width="1" height="1" fill="#141414"/><rect x="12" y="21" width="1" height="1" fill="#141414"/><rect x="13" y="21" width="1" height="1" fill="#141414"/><rect x="14" y="21" width="1" height="1" fill="#4a2a78"/><rect x="15" y="21" width="1" height="1" fill="#4a2a78"/><rect x="16" y="21" width="1" height="1" fill="#4a2a78"/><rect x="17" y="21" width="1" height="1" fill="#4a2a78"/><rect x="18" y="21" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="21" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="21" width="1" height="1" fill="#4a2a78"/><rect x="21" y="21" width="1" height="1" fill="#141414"/><rect x="22" y="21" width="1" height="1" fill="#141414"/><rect x="23" y="21" width="1" height="1" fill="#4a2a78"/><rect x="24" y="21" width="1" height="1" fill="#163257"/><rect x="25" y="21" width="1" height="1" fill="#163257"/><rect x="4" y="22" width="1" height="1" fill="#141414"/><rect x="5" y="22" width="1" height="1" fill="#141414"/><rect x="6" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="8" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="9" y="22" width="1" height="1" fill="#141414"/><rect x="10" y="22" width="1" height="1" fill="#141414"/><rect x="11" y="22" width="1" height="1" fill="#141414"/><rect x="12" y="22" width="1" height="1" fill="#141414"/><rect x="13" y="22" width="1" height="1" fill="#141414"/><rect x="14" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="15" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="16" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="17" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="22" width="1" height="1" fill="#8a5fc0"/><rect x="21" y="22" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="22" width="1" height="1" fill="#141414"/><rect x="4" y="23" width="1" height="1" fill="#141414"/><rect x="5" y="23" width="1" height="1" fill="#141414"/><rect x="6" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="8" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="9" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="10" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="11" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="12" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="13" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="14" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="15" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="16" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="17" y="23" width="1" height="1" fill="#4a2a78"/><rect x="18" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="23" width="1" height="1" fill="#6a3fa0"/><rect x="20" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="21" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="22" y="23" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="23" width="1" height="1" fill="#141414"/><rect x="24" y="23" width="1" height="1" fill="#163257"/><rect x="3" y="24" width="1" height="1" fill="#141414"/><rect x="5" y="24" width="1" height="1" fill="#d9b942"/><rect x="6" y="24" width="1" height="1" fill="#d9b942"/><rect x="7" y="24" width="1" height="1" fill="#163257"/><rect x="8" y="24" width="1" height="1" fill="#6a3fa0"/><rect x="9" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="10" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="11" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="12" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="13" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="14" y="24" width="1" height="1" fill="#4a2a78"/><rect x="15" y="24" width="1" height="1" fill="#6a3fa0"/><rect x="16" y="24" width="1" height="1" fill="#141414"/><rect x="17" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="24" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="24" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="24" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="24" width="1" height="1" fill="#141414"/><rect x="3" y="25" width="1" height="1" fill="#141414"/><rect x="4" y="25" width="1" height="1" fill="#d9b942"/><rect x="5" y="25" width="1" height="1" fill="#d9b942"/><rect x="6" y="25" width="1" height="1" fill="#d9b942"/><rect x="7" y="25" width="1" height="1" fill="#141414"/><rect x="8" y="25" width="1" height="1" fill="#141414"/><rect x="9" y="25" width="1" height="1" fill="#ab8a3e"/><rect x="10" y="25" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="25" width="1" height="1" fill="#ab8a3e"/><rect x="12" y="25" width="1" height="1" fill="#ab8a3e"/><rect x="13" y="25" width="1" height="1" fill="#ab8a3e"/><rect x="14" y="25" width="1" height="1" fill="#6a3fa0"/><rect x="15" y="25" width="1" height="1" fill="#163257"/><rect x="16" y="25" width="1" height="1" fill="#ab8a3e"/><rect x="17" y="25" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="25" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="25" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="25" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="25" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="25" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="25" width="1" height="1" fill="#141414"/><rect x="3" y="26" width="1" height="1" fill="#141414"/><rect x="6" y="26" width="1" height="1" fill="#d9b942"/><rect x="7" y="26" width="1" height="1" fill="#141414"/><rect x="8" y="26" width="1" height="1" fill="#141414"/><rect x="9" y="26" width="1" height="1" fill="#ab8a3e"/><rect x="10" y="26" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="26" width="1" height="1" fill="#ab8a3e"/><rect x="12" y="26" width="1" height="1" fill="#ab8a3e"/><rect x="13" y="26" width="1" height="1" fill="#ab8a3e"/><rect x="14" y="26" width="1" height="1" fill="#141414"/><rect x="15" y="26" width="1" height="1" fill="#141414"/><rect x="16" y="26" width="1" height="1" fill="#d9b942"/><rect x="17" y="26" width="1" height="1" fill="#d9b942"/><rect x="18" y="26" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="26" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="26" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="26" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="26" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="26" width="1" height="1" fill="#141414"/><rect x="24" y="26" width="1" height="1" fill="#163257"/><rect x="3" y="27" width="1" height="1" fill="#141414"/><rect x="4" y="27" width="1" height="1" fill="#25497f"/><rect x="5" y="27" width="1" height="1" fill="#4a2a78"/><rect x="6" y="27" width="1" height="1" fill="#141414"/><rect x="7" y="27" width="1" height="1" fill="#ab8a3e"/><rect x="8" y="27" width="1" height="1" fill="#ab8a3e"/><rect x="9" y="27" width="1" height="1" fill="#d9b942"/><rect x="10" y="27" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="27" width="1" height="1" fill="#d9b942"/><rect x="12" y="27" width="1" height="1" fill="#d9b942"/><rect x="13" y="27" width="1" height="1" fill="#d9b942"/><rect x="14" y="27" width="1" height="1" fill="#141414"/><rect x="15" y="27" width="1" height="1" fill="#141414"/><rect x="16" y="27" width="1" height="1" fill="#d9b942"/><rect x="17" y="27" width="1" height="1" fill="#d9b942"/><rect x="18" y="27" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="27" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="27" width="1" height="1" fill="#6a3fa0"/><rect x="21" y="27" width="1" height="1" fill="#6a3fa0"/><rect x="22" y="27" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="27" width="1" height="1" fill="#141414"/><rect x="24" y="27" width="1" height="1" fill="#163257"/><rect x="3" y="28" width="1" height="1" fill="#141414"/><rect x="4" y="28" width="1" height="1" fill="#3e6aad"/><rect x="5" y="28" width="1" height="1" fill="#b18ae0"/><rect x="6" y="28" width="1" height="1" fill="#141414"/><rect x="7" y="28" width="1" height="1" fill="#ab8a3e"/><rect x="8" y="28" width="1" height="1" fill="#ab8a3e"/><rect x="9" y="28" width="1" height="1" fill="#d9b942"/><rect x="10" y="28" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="28" width="1" height="1" fill="#d9b942"/><rect x="12" y="28" width="1" height="1" fill="#d9b942"/><rect x="13" y="28" width="1" height="1" fill="#d9b942"/><rect x="14" y="28" width="1" height="1" fill="#ab8a3e"/><rect x="15" y="28" width="1" height="1" fill="#ab8a3e"/><rect x="16" y="28" width="1" height="1" fill="#141414"/><rect x="17" y="28" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="28" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="28" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="28" width="1" height="1" fill="#141414"/><rect x="21" y="28" width="1" height="1" fill="#8a5fc0"/><rect x="22" y="28" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="28" width="1" height="1" fill="#141414"/><rect x="24" y="28" width="1" height="1" fill="#163257"/><rect x="3" y="29" width="1" height="1" fill="#141414"/><rect x="4" y="29" width="1" height="1" fill="#3e6aad"/><rect x="5" y="29" width="1" height="1" fill="#b18ae0"/><rect x="6" y="29" width="1" height="1" fill="#141414"/><rect x="7" y="29" width="1" height="1" fill="#ab8a3e"/><rect x="8" y="29" width="1" height="1" fill="#ab8a3e"/><rect x="9" y="29" width="1" height="1" fill="#d9b942"/><rect x="10" y="29" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="29" width="1" height="1" fill="#d9b942"/><rect x="12" y="29" width="1" height="1" fill="#d9b942"/><rect x="13" y="29" width="1" height="1" fill="#d9b942"/><rect x="14" y="29" width="1" height="1" fill="#ab8a3e"/><rect x="15" y="29" width="1" height="1" fill="#ab8a3e"/><rect x="16" y="29" width="1" height="1" fill="#141414"/><rect x="17" y="29" width="1" height="1" fill="#8a5fc0"/><rect x="18" y="29" width="1" height="1" fill="#8a5fc0"/><rect x="19" y="29" width="1" height="1" fill="#8a5fc0"/><rect x="20" y="29" width="1" height="1" fill="#141414"/><rect x="21" y="29" width="1" height="1" fill="#8a5fc0"/><rect x="22" y="29" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="29" width="1" height="1" fill="#141414"/><rect x="24" y="29" width="1" height="1" fill="#163257"/><rect x="3" y="30" width="1" height="1" fill="#141414"/><rect x="4" y="30" width="1" height="1" fill="#25497f"/><rect x="5" y="30" width="1" height="1" fill="#b18ae0"/><rect x="6" y="30" width="1" height="1" fill="#141414"/><rect x="7" y="30" width="1" height="1" fill="#141414"/><rect x="8" y="30" width="1" height="1" fill="#141414"/><rect x="9" y="30" width="1" height="1" fill="#6b5420"/><rect x="10" y="30" width="1" height="1" fill="#ab8a3e"/><rect x="11" y="30" width="1" height="1" fill="#ab8a3e"/><rect x="12" y="30" width="1" height="1" fill="#ab8a3e"/><rect x="13" y="30" width="1" height="1" fill="#ab8a3e"/><rect x="14" y="30" width="1" height="1" fill="#ab8a3e"/><rect x="15" y="30" width="1" height="1" fill="#ab8a3e"/><rect x="16" y="30" width="1" height="1" fill="#ab8a3e"/><rect x="17" y="30" width="1" height="1" fill="#6b5420"/><rect x="18" y="30" width="1" height="1" fill="#6b5420"/><rect x="19" y="30" width="1" height="1" fill="#141414"/><rect x="20" y="30" width="1" height="1" fill="#141414"/><rect x="21" y="30" width="1" height="1" fill="#8a5fc0"/><rect x="22" y="30" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="30" width="1" height="1" fill="#141414"/><rect x="24" y="30" width="1" height="1" fill="#163257"/><rect x="4" y="31" width="1" height="1" fill="#141414"/><rect x="5" y="31" width="1" height="1" fill="#141414"/><rect x="6" y="31" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="31" width="1" height="1" fill="#141414"/><rect x="8" y="31" width="1" height="1" fill="#141414"/><rect x="9" y="31" width="1" height="1" fill="#141414"/><rect x="10" y="31" width="1" height="1" fill="#141414"/><rect x="11" y="31" width="1" height="1" fill="#6b5420"/><rect x="12" y="31" width="1" height="1" fill="#6b5420"/><rect x="13" y="31" width="1" height="1" fill="#6b5420"/><rect x="14" y="31" width="1" height="1" fill="#6b5420"/><rect x="15" y="31" width="1" height="1" fill="#6b5420"/><rect x="16" y="31" width="1" height="1" fill="#6b5420"/><rect x="17" y="31" width="1" height="1" fill="#141414"/><rect x="18" y="31" width="1" height="1" fill="#141414"/><rect x="19" y="31" width="1" height="1" fill="#141414"/><rect x="20" y="31" width="1" height="1" fill="#141414"/><rect x="21" y="31" width="1" height="1" fill="#8a5fc0"/><rect x="22" y="31" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="31" width="1" height="1" fill="#141414"/><rect x="24" y="31" width="1" height="1" fill="#163257"/><rect x="4" y="32" width="1" height="1" fill="#163257"/><rect x="5" y="32" width="1" height="1" fill="#8a5fc0"/><rect x="6" y="32" width="1" height="1" fill="#8a5fc0"/><rect x="7" y="32" width="1" height="1" fill="#141414"/><rect x="8" y="32" width="1" height="1" fill="#141414"/><rect x="9" y="32" width="1" height="1" fill="#141414"/><rect x="10" y="32" width="1" height="1" fill="#141414"/><rect x="11" y="32" width="1" height="1" fill="#4a2a78"/><rect x="12" y="32" width="1" height="1" fill="#4a2a78"/><rect x="13" y="32" width="1" height="1" fill="#4a2a78"/><rect x="14" y="32" width="1" height="1" fill="#4a2a78"/><rect x="15" y="32" width="1" height="1" fill="#4a2a78"/><rect x="16" y="32" width="1" height="1" fill="#4a2a78"/><rect x="17" y="32" width="1" height="1" fill="#4a2a78"/><rect x="18" y="32" width="1" height="1" fill="#4a2a78"/><rect x="19" y="32" width="1" height="1" fill="#141414"/><rect x="20" y="32" width="1" height="1" fill="#141414"/><rect x="21" y="32" width="1" height="1" fill="#8a5fc0"/><rect x="22" y="32" width="1" height="1" fill="#8a5fc0"/><rect x="23" y="32" width="1" height="1" fill="#141414"/><rect x="24" y="32" width="1" height="1" fill="#163257"/><rect x="6" y="33" width="1" height="1" fill="#141414"/><rect x="7" y="33" width="1" height="1" fill="#141414"/><rect x="8" y="33" width="1" height="1" fill="#141414"/><rect x="9" y="33" width="1" height="1" fill="#141414"/><rect x="10" y="33" width="1" height="1" fill="#8a5fc0"/><rect x="11" y="33" width="1" height="1" fill="#8a5fc0"/><rect x="12" y="33" width="1" height="1" fill="#8a5fc0"/><rect x="13" y="33" width="1" height="1" fill="#8a5fc0"/><rect x="14" y="33" width="1" height="1" fill="#8a5fc0"/><rect x="15" y="33" width="1" height="1" fill="#8a5fc0"/><rect x="16" y="33" width="1" height="1" fill="#8a5fc0"/><rect x="17" y="33" width="1" height="1" fill="#4a2a78"/><rect x="18" y="33" width="1" height="1" fill="#163257"/><rect x="19" y="33" width="1" height="1" fill="#141414"/><rect x="20" y="33" width="1" height="1" fill="#141414"/><rect x="21" y="33" width="1" height="1" fill="#141414"/><rect x="22" y="33" width="1" height="1" fill="#141414"/><rect x="23" y="33" width="1" height="1" fill="#4a2a78"/><rect x="24" y="33" width="1" height="1" fill="#163257"/><rect x="25" y="33" width="1" height="1" fill="#141414"/><rect x="9" y="34" width="1" height="1" fill="#141414"/><rect x="10" y="34" width="1" height="1" fill="#141414"/><rect x="11" y="34" width="1" height="1" fill="#141414"/><rect x="12" y="34" width="1" height="1" fill="#141414"/><rect x="13" y="34" width="1" height="1" fill="#141414"/><rect x="14" y="34" width="1" height="1" fill="#141414"/><rect x="15" y="34" width="1" height="1" fill="#141414"/><rect x="16" y="34" width="1" height="1" fill="#141414"/><rect x="17" y="34" width="1" height="1" fill="#141414"/><rect x="18" y="34" width="1" height="1" fill="#141414"/><rect x="19" y="34" width="1" height="1" fill="#141414"/><rect x="20" y="34" width="1" height="1" fill="#141414"/><rect x="21" y="34" width="1" height="1" fill="#141414"/><rect x="22" y="34" width="1" height="1" fill="#141414"/><rect x="23" y="34" width="1" height="1" fill="#141414"/><rect x="24" y="34" width="1" height="1" fill="#163257"/></svg></span> Alchemist's gold (siphoned from HP)</span>
           <input type="text" inputmode="decimal" id="carryoverInput" class="sts-carryover-input" placeholder="0.00">
         </div>
         <div class="sts-result-row">
@@ -1935,6 +2011,38 @@
       <div id="shopSpendRow">
         <label class="shop-spend-label shop-potion-label">Buy items</label>
         <input type="number" inputmode="decimal" step="0.01" id="shopSpendInput" class="shop-spend-input" placeholder="0.00">
+      </div>
+      <!-- Paid with -- Cash/Debit (default, unchanged behavior) pulls the
+           spend straight out of the real balance like always. Picking a
+           boss instead means the purchase was charged to that card: the
+           envelope still drops by what's typed above, but the real
+           balance doesn't move (the cash hasn't left yet), and the card's
+           own debt grows by that same buy amount instead.
+
+           "Amount paid" is a separate, optional payment toward that same
+           card, logged in the same trip -- not tied to the buy amount at
+           all (could be more, less, or skipped entirely). It immediately
+           knocks that amount off the boss's balance (paying debt down),
+           and creates its own new bill transaction -- pending, not yet
+           deducted -- so it shows up and counts toward Outstanding right
+           away, same as any bill does, until it's later marked paid and
+           the real account actually gets hit. "From account" just tags
+           that new transaction so it lands in the right Outstanding
+           bucket and pulls from the right balance later. -->
+      <div id="shopPaidWithRow" class="shop-paidwith-row">
+        <label class="shop-spend-label shop-potion-label">Paid with</label>
+        <select id="shopPaidWithSelect" class="shop-paidwith-select">
+          <option value="">Cash / Debit</option>
+        </select>
+      </div>
+      <div id="shopCardChargeRow" class="shop-paidwith-row" style="display:none;">
+        <label class="shop-spend-label shop-potion-label">Amount paid</label>
+        <input type="number" inputmode="decimal" step="0.01" id="shopCardChargeInput" class="shop-spend-input" placeholder="0.00">
+        <label class="shop-spend-label shop-potion-label" style="margin-top:4px;">From account</label>
+        <div class="account-toggle-row" id="shopPaidFromAcctRow" style="margin-bottom:0;">
+          <button type="button" class="account-toggle-btn" id="shopPaidFromAcctBtn1" data-account="1"></button>
+          <button type="button" class="account-toggle-btn" id="shopPaidFromAcctBtn2" data-account="2"></button>
+        </div>
       </div>
       <div id="shopSellRow" class="shop-sell-row">
         <label class="shop-spend-label shop-potion-label">Sell items</label>
@@ -4769,22 +4877,52 @@ var qrcode = function() {
     if(t.status === "pending") return t.deducted ? "var(--pending-yellow)" : "var(--pending-orange)";
     return "var(--text-dim)";
   }
+  // Shared by all three rosters below: out of one series' stored occurrences
+  // (a bill repeats "monthly" etc. by having one row generated per cycle,
+  // up to ~2 years out), picks the single one that represents "this
+  // series' cycle" for a given anchor window. If an occurrence actually
+  // falls inside the window (anchorStart..anchorEnd), that's the one --
+  // so browsing to the Oct 29 pay period picks that series' Nov 3
+  // occurrence, not whichever occurrence happens to sit closest to the
+  // real calendar date today. If none falls inside the window (this
+  // series isn't due this particular fortnight), falls back to whichever
+  // occurrence sits closest to the window, so the series still shows up
+  // as "coming up" or "last cycle" rather than vanishing.
+  function pickSeriesOccurrence(occurrences, anchorStart, anchorEnd){
+    const inWindow = occurrences.filter(t => {
+      const d = toDateOnly(parseISO(t.date));
+      return d >= anchorStart && d <= anchorEnd;
+    });
+    if(inWindow.length) return inWindow[0];
+    const center = new Date((anchorStart.getTime() + anchorEnd.getTime()) / 2);
+    let best = null, bestDiff = Infinity;
+    occurrences.forEach(t => {
+      const diff = Math.abs(toDateOnly(parseISO(t.date)) - center);
+      if(diff < bestDiff){ bestDiff = diff; best = t; }
+    });
+    return best;
+  }
+
   // Guild Hall is a subscription roster, not a period-scoped list -- each
   // subscription bills on its own day of the month (Netflix the 6th,
   // Planet Fitness the 17th, etc.), so a single 2-week pay period only
   // ever catches 2-4 of them. This instead looks across every period and
   // picks, per distinct subscription (by seriesId, falling back to label
-  // for one-offs), whichever single occurrence sits closest to today --
-  // so Guild Hall always shows all of them, each as its current cycle.
-  function guildHallCurrentBills(){
-    const today = toDateOnly(new Date());
+  // for one-offs), whichever single occurrence belongs to the pay period
+  // on screen (anchorStart..anchorEnd) -- so Guild Hall always shows all
+  // of them, each as ITS cycle for whichever fortnight you're browsing,
+  // not frozen on today's cycle while you page through other periods.
+  function guildHallCurrentBills(anchorStart, anchorEnd){
     const groups = {};
     state.transactions.filter(isGuildHallBill).forEach(t => {
       const key = t.seriesId || ("label:" + t.label.toLowerCase());
-      const diff = Math.abs(toDateOnly(parseISO(t.date)) - today);
-      if(!groups[key] || diff < groups[key].diff) groups[key] = { t, diff };
+      if(!groups[key]) groups[key] = [];
+      groups[key].push(t);
     });
-    return Object.values(groups).map(g => g.t).sort((a,b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
+    return Object.values(groups)
+      .map(list => pickSeriesOccurrence(list, anchorStart, anchorEnd))
+      .filter(Boolean)
+      .sort((a,b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
   }
 
   // The Keep -- same tag-based roster mechanic as Guild Hall, just for
@@ -4794,33 +4932,32 @@ var qrcode = function() {
     return !!(t && t.type !== "income" && !isShopEnvelope(t) &&
       Array.isArray(t.tags) && t.tags.some(tag => typeof tag === "string" && tag.toLowerCase() === "essential"));
   }
-  function keepCurrentBills(){
-    const today = toDateOnly(new Date());
+  function keepCurrentBills(anchorStart, anchorEnd){
     const groups = {};
     state.transactions.filter(isKeepBill).forEach(t => {
       const key = t.seriesId || ("label:" + t.label.toLowerCase());
-      const diff = Math.abs(toDateOnly(parseISO(t.date)) - today);
-      if(!groups[key] || diff < groups[key].diff) groups[key] = { t, diff };
+      if(!groups[key]) groups[key] = [];
+      groups[key].push(t);
     });
-    return Object.values(groups).map(g => g.t).sort((a,b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
+    return Object.values(groups)
+      .map(list => pickSeriesOccurrence(list, anchorStart, anchorEnd))
+      .filter(Boolean)
+      .sort((a,b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
   }
 
   // Boss Dungeon -- same "cross-period roster" idea as Guild Hall/The Keep,
   // but sourced from state.bosses (the HP-bar debt trackers) instead of a
   // tag. Each boss with a linked bill series gets one tile: its portrait,
   // its HP bar (balance vs startingBalance, same math the top Bosses shelf
-  // uses), and whichever upcoming payment against it sits nearest to today.
-  function dungeonCurrentEntries(){
-    const today = toDateOnly(new Date());
+  // uses), and whichever payment against it belongs to the pay period on
+  // screen (anchorStart..anchorEnd).
+  function dungeonCurrentEntries(anchorStart, anchorEnd){
     return state.bosses.filter(b => b.linkedKey).map(b => {
       const linkedTxs = state.transactions.filter(t =>
         t.type !== "income" && !isShopEnvelope(t) && (t.seriesId || t.id) === b.linkedKey);
       if(!linkedTxs.length) return null;
-      let best = null, bestDiff = Infinity;
-      linkedTxs.forEach(t => {
-        const diff = Math.abs(toDateOnly(parseISO(t.date)) - today);
-        if(diff < bestDiff){ bestDiff = diff; best = t; }
-      });
+      const best = pickSeriesOccurrence(linkedTxs, anchorStart, anchorEnd);
+      if(!best) return null;
       return { boss: b, t: best };
     }).filter(Boolean).sort((a,b) => a.t.date < b.t.date ? -1 : (a.t.date > b.t.date ? 1 : 0));
   }
@@ -5362,18 +5499,33 @@ var qrcode = function() {
     { key:"paid", cls:"paid", label:"Mark paid", lines:["Paid"], svg:'<svg viewBox="0 0 24 24" fill="none" stroke="#0d1016" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' }
   ];
 
-  // The three staple shop envelopes now show as tiles above the list
-  // (buildShopTileRowHTML) instead of as rows here -- pulled out so they
-  // don't show twice.
+  // The three staple shop envelopes (Marketplace/Stables/Tavern) always
+  // show as tiles here, in both Tile and List layout -- they're pinned,
+  // not part of what the Layout toggle switches. Only the grouping tiles
+  // (Guild Hall/The Keep/Boss Dungeon) and the rest of the list follow
+  // the toggle: in List layout their bills fall back into the plain flat
+  // list below (buildFlatListModeHTML) instead of staying grouped tiles.
   function buildShopTileRowHTML(){
-    // List View moves every tile (staples included) into the pinned/flat
-    // list instead -- nothing to show up here.
-    if(shopViewMode() === "list") return "";
+    const listMode = shopViewMode() === "list";
     const shopList = filteredSortedTx().filter(isShopEnvelope);
-    const guildBills = guildHallCurrentBills();
-    const keepBills = keepCurrentBills();
-    const dungeonEntries = dungeonCurrentEntries();
-    if(shopList.length === 0 && guildBills.length === 0 && keepBills.length === 0 && dungeonEntries.length === 0) return "";
+    // Each roster function now picks its per-series occurrence against
+    // the fortnight actually on screen, so this already returns the
+    // bills that belong to THIS browsed period wherever one exists.
+    const { start: fortnightStart, end: fortnightEnd } = displayRange();
+    const guildBills = listMode ? [] : guildHallCurrentBills(fortnightStart, fortnightEnd);
+    const keepBills = listMode ? [] : keepCurrentBills(fortnightStart, fortnightEnd);
+    const dungeonEntries = listMode ? [] : dungeonCurrentEntries(fortnightStart, fortnightEnd);
+    // A series can still fall back to its nearest occurrence outside this
+    // window (nothing of its due this particular fortnight) -- narrow
+    // down to only what's actually due THIS period before summing.
+    const dueThisFortnight = t => {
+      const d = toDateOnly(parseISO(t.date));
+      return d >= fortnightStart && d <= fortnightEnd;
+    };
+    const guildDue = guildBills.filter(dueThisFortnight);
+    const keepDue = keepBills.filter(dueThisFortnight);
+    const dungeonDue = dungeonEntries.filter(e => dueThisFortnight(e.t));
+    if(shopList.length === 0 && guildDue.length === 0 && keepDue.length === 0 && dungeonDue.length === 0) return "";
     const today = toDateOnly(new Date());
     const tiles = shopList.map(t => {
       const menuOpen = t.id === openStatusPickerId || t.id === openActionMenuId;
@@ -5401,28 +5553,31 @@ var qrcode = function() {
     // versa), so whichever bar is active sits right under the three gold
     // tiles instead of leaving the other grouping tile stranded next to it.
     let guildTile = "";
-    if(guildBills.length > 0 && !guildHallViewActive && !keepViewActive && !dungeonViewActive){
-      const guildTotal = guildBills.reduce((s,t) => s + effectiveAmount(t), 0);
-      const guildPaid = guildBills.filter(t => t.status === "paid").length;
-      const guildPct = Math.max(0, Math.min(100, (guildPaid / guildBills.length) * 100));
+    if(guildDue.length > 0 && !guildHallViewActive && !keepViewActive && !dungeonViewActive){
+      const guildTotal = guildDue.reduce((s,t) => s + effectiveAmount(t), 0);
+      const guildRemaining = guildDue.filter(t => t.status !== "paid").reduce((s,t) => s + effectiveAmount(t), 0);
+      // Fill represents what's still owed (like the gold envelopes' "left"
+      // bars), not what's already paid -- $200 left of $1,166 should read
+      // as a mostly-empty bar, not a nearly-full one.
+      const guildPct = guildTotal > 0 ? Math.max(0, Math.min(100, (guildRemaining / guildTotal) * 100)) : 0;
       guildTile = `<div class="shop-tile guild-hall-tile" data-guild-hall-open="1">
         <span class="shop-tile-icon">${guildHallIconSVG()}</span>
         <div class="shop-tile-name">Guild Hall</div>
-        <div class="shop-tile-gold">${fmtMoney(guildTotal)} due</div>
+        <div class="shop-tile-gold">${fmtMoney(guildRemaining)} of ${fmtMoney(guildTotal)}</div>
         <div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${guildPct}%;background:#3f6fd1;"></div></div>
       </div>`;
     }
     // The Keep -- same grouping-tile treatment as Guild Hall, essential
     // bills (insurance, utilities, phone/internet) instead of subscriptions.
     let keepTile = "";
-    if(keepBills.length > 0 && !keepViewActive && !guildHallViewActive && !dungeonViewActive){
-      const keepTotal = keepBills.reduce((s,t) => s + effectiveAmount(t), 0);
-      const keepPaid = keepBills.filter(t => t.status === "paid").length;
-      const keepPct = Math.max(0, Math.min(100, (keepPaid / keepBills.length) * 100));
+    if(keepDue.length > 0 && !keepViewActive && !guildHallViewActive && !dungeonViewActive){
+      const keepTotal = keepDue.reduce((s,t) => s + effectiveAmount(t), 0);
+      const keepRemaining = keepDue.filter(t => t.status !== "paid").reduce((s,t) => s + effectiveAmount(t), 0);
+      const keepPct = keepTotal > 0 ? Math.max(0, Math.min(100, (keepRemaining / keepTotal) * 100)) : 0;
       keepTile = `<div class="shop-tile keep-tile" data-keep-open="1">
         <span class="shop-tile-icon">${keepIconSVG()}</span>
         <div class="shop-tile-name">The Keep</div>
-        <div class="shop-tile-gold">${fmtMoney(keepTotal)} due</div>
+        <div class="shop-tile-gold">${fmtMoney(keepRemaining)} of ${fmtMoney(keepTotal)}</div>
         <div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${keepPct}%;background:#8a97a8;"></div></div>
       </div>`;
     }
@@ -5431,14 +5586,14 @@ var qrcode = function() {
     // its icon is a plain archway (each boss gets its own portrait once
     // you're inside).
     let dungeonTile = "";
-    if(dungeonEntries.length > 0 && !dungeonViewActive && !guildHallViewActive && !keepViewActive){
-      const dungeonTotal = dungeonEntries.reduce((s,e) => s + effectiveAmount(e.t), 0);
-      const dungeonPaid = dungeonEntries.filter(e => e.t.status === "paid").length;
-      const dungeonPct = Math.max(0, Math.min(100, (dungeonPaid / dungeonEntries.length) * 100));
+    if(dungeonDue.length > 0 && !dungeonViewActive && !guildHallViewActive && !keepViewActive){
+      const dungeonTotal = dungeonDue.reduce((s,e) => s + effectiveAmount(e.t), 0);
+      const dungeonRemaining = dungeonDue.filter(e => e.t.status !== "paid").reduce((s,e) => s + effectiveAmount(e.t), 0);
+      const dungeonPct = dungeonTotal > 0 ? Math.max(0, Math.min(100, (dungeonRemaining / dungeonTotal) * 100)) : 0;
       dungeonTile = `<div class="shop-tile dungeon-tile" data-dungeon-open="1">
         <span class="shop-tile-icon">${dungeonIconSVG()}</span>
         <div class="shop-tile-name">Boss Dungeon</div>
-        <div class="shop-tile-gold">${fmtMoney(dungeonTotal)} due</div>
+        <div class="shop-tile-gold">${fmtMoney(dungeonRemaining)} of ${fmtMoney(dungeonTotal)}</div>
         <div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${dungeonPct}%;background:var(--coral);"></div></div>
       </div>`;
     }
@@ -5454,38 +5609,34 @@ var qrcode = function() {
   // action-menu a normal row gets (buildRowMenusHTML), same pattern the
   // outer shop-tile row already uses.
   function buildGuildHallGridHTML(){
-    // "Current" = due within the pay period that contains TODAY, not
-    // whichever period you happen to be browsing -- so this reordering
-    // automatically shifts to a new set of subs once the real fortnight
-    // rolls over, regardless of what the date arrows above are showing.
-    const liveStart = periodStartContaining(new Date());
-    const liveEnd = periodEnd(liveStart);
-    const isLiveDue = t => {
+    // "Current" = due within whichever pay period is on screen right now
+    // (the date arrows above), not hardcoded to today's real fortnight --
+    // so browsing forward to, say, the Oct 29 paycheck brings THAT
+    // period's subs to the top and highlights them, and it keeps doing
+    // that automatically fortnight after fortnight as you keep moving
+    // forward (or back), not just for the one containing today.
+    const { start: viewStart, end: viewEnd } = displayRange();
+    const isDueThisView = t => {
       const d = toDateOnly(parseISO(t.date));
-      return d >= liveStart && d <= liveEnd;
+      return d >= viewStart && d <= viewEnd;
     };
-    const bills = guildHallCurrentBills().slice().sort((a, b) => {
-      const aCur = isLiveDue(a) ? 0 : 1;
-      const bCur = isLiveDue(b) ? 0 : 1;
+    const bills = guildHallCurrentBills(viewStart, viewEnd).slice().sort((a, b) => {
+      const aCur = isDueThisView(a) ? 0 : 1;
+      const bCur = isDueThisView(b) ? 0 : 1;
       if(aCur !== bCur) return aCur - bCur;
       return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0);
     });
-    const bar = '<div class="guild-hall-bar" data-guild-hall-close="1">Guild Hall</div>';
+    const barIcon = `<span class="building-bar-icon">${guildHallIconSVG()}</span>`;
+    const bar = `<div class="guild-hall-bar" data-guild-hall-close="1">${barIcon}Guild Hall${barIcon}</div>`;
     if(bills.length === 0){
       return bar + '<div class="reserve-stats-note">No subscriptions tagged "SUB" yet.</div>';
     }
-    // Same pulsing green dot the date slider uses to flag "this is the
-    // live period" -- only lights up on a tile when you're browsing the
-    // pay period that contains TODAY (same test as the date slider's own
-    // dot), and only on the subs actually due within that fortnight.
-    // Browse to a past or future period and nothing lights up, since
-    // "this fortnight" hasn't happened/arrived yet for that view.
-    const showDots = isCurrentPeriodShown();
-    const { start: viewStart, end: viewEnd } = displayRange();
     const today = toDateOnly(new Date());
     // Same tile markup/classes as Marketplace/Stables/Tavern -- icon,
     // name, amount, bottom bar -- just filled from each subscription's
-    // own status instead of a Gold envelope's remaining balance.
+    // own status instead of a Gold envelope's remaining balance. The name
+    // reads a bit bigger here and a due-date line sits under it, so each
+    // tile reads name -> due date -> amount owed -> bar.
     const statusPct = t => t.status === "paid" ? 100 : (t.status === "pending" ? (t.deducted ? 75 : 50) : 0);
     const tiles = bills.map(t => {
       const menuOpen = t.id === openStatusPickerId || t.id === openActionMenuId;
@@ -5494,14 +5645,12 @@ var qrcode = function() {
       // instead of staying a small square tile -- so the menu lands right
       // where you tapped it, not stranded under the whole tile grid.
       if(menuOpen) return buildTxRowHTML(t, today);
-      const d = toDateOnly(parseISO(t.date));
-      const inPeriod = showDots && d >= viewStart && d <= viewEnd;
-      const nameHTML = inPeriod
-        ? '<span class="current-period-dot dot-left"></span>' + escapeHtml(t.label) + '<span class="current-period-dot dot-right"></span>'
-        : escapeHtml(t.label);
-      return `<div class="shop-tile" data-guild-sub-id="${t.id}">
-        <span class="shop-tile-icon">${guildHallIconSVG()}</span>
-        <div class="shop-tile-name">${nameHTML}</div>
+      const inPeriod = isDueThisView(t);
+      // The green square outline is the only in-period highlight now --
+      // no more pulsing dots flanking the name.
+      return `<div class="shop-tile${inPeriod ? " current-fortnight-tile" : ""}" data-guild-sub-id="${t.id}">
+        <div class="shop-tile-name shop-tile-name-lg">${escapeHtml(t.label)}</div>
+        <div class="shop-tile-due">${fmtDate(parseISO(t.date), state.settings.dateFormat)}</div>
         <div class="shop-tile-gold">${fmtMoney(effectiveAmount(t))}</div>
         <div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${statusPct(t)}%;background:${guildStatusColor(t)};"></div></div>
       </div>`;
@@ -5513,37 +5662,34 @@ var qrcode = function() {
   // Same exact mechanic as Guild Hall's grid, just for "Essential"-tagged
   // bills (insurance, utilities, phone/internet) instead of "SUB".
   function buildKeepGridHTML(){
-    const liveStart = periodStartContaining(new Date());
-    const liveEnd = periodEnd(liveStart);
-    const isLiveDue = t => {
+    // Keyed off whichever pay period the date arrows are showing, not
+    // hardcoded to today's real fortnight -- so navigating forward or
+    // back brings THAT period's bills to the top and highlights them.
+    const { start: viewStart, end: viewEnd } = displayRange();
+    const isDueThisView = t => {
       const d = toDateOnly(parseISO(t.date));
-      return d >= liveStart && d <= liveEnd;
+      return d >= viewStart && d <= viewEnd;
     };
-    const bills = keepCurrentBills().slice().sort((a, b) => {
-      const aCur = isLiveDue(a) ? 0 : 1;
-      const bCur = isLiveDue(b) ? 0 : 1;
+    const bills = keepCurrentBills(viewStart, viewEnd).slice().sort((a, b) => {
+      const aCur = isDueThisView(a) ? 0 : 1;
+      const bCur = isDueThisView(b) ? 0 : 1;
       if(aCur !== bCur) return aCur - bCur;
       return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0);
     });
-    const bar = '<div class="keep-bar" data-keep-close="1">The Keep</div>';
+    const barIcon = `<span class="building-bar-icon">${keepIconSVG()}</span>`;
+    const bar = `<div class="keep-bar" data-keep-close="1">${barIcon}The Keep${barIcon}</div>`;
     if(bills.length === 0){
       return bar + '<div class="reserve-stats-note">No bills tagged "Essential" yet.</div>';
     }
-    const showDots = isCurrentPeriodShown();
-    const { start: viewStart, end: viewEnd } = displayRange();
     const today = toDateOnly(new Date());
     const statusPct = t => t.status === "paid" ? 100 : (t.status === "pending" ? (t.deducted ? 75 : 50) : 0);
     const tiles = bills.map(t => {
       const menuOpen = t.id === openStatusPickerId || t.id === openActionMenuId;
       if(menuOpen) return buildTxRowHTML(t, today);
-      const d = toDateOnly(parseISO(t.date));
-      const inPeriod = showDots && d >= viewStart && d <= viewEnd;
-      const nameHTML = inPeriod
-        ? '<span class="current-period-dot dot-left"></span>' + escapeHtml(t.label) + '<span class="current-period-dot dot-right"></span>'
-        : escapeHtml(t.label);
-      return `<div class="shop-tile" data-keep-sub-id="${t.id}">
-        <span class="shop-tile-icon">${keepIconSVG()}</span>
-        <div class="shop-tile-name">${nameHTML}</div>
+      const inPeriod = isDueThisView(t);
+      return `<div class="shop-tile${inPeriod ? " current-fortnight-tile" : ""}" data-keep-sub-id="${t.id}">
+        <div class="shop-tile-name shop-tile-name-lg">${escapeHtml(t.label)}</div>
+        <div class="shop-tile-due">${fmtDate(parseISO(t.date), state.settings.dateFormat)}</div>
         <div class="shop-tile-gold">${fmtMoney(effectiveAmount(t))}</div>
         <div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${statusPct(t)}%;background:${guildStatusColor(t)};"></div></div>
       </div>`;
@@ -5559,24 +5705,27 @@ var qrcode = function() {
   // and tapping it still opens the usual status-picker + action-menu for
   // whichever payment against it is currently due.
   function buildDungeonGridHTML(){
-    const liveStart = periodStartContaining(new Date());
-    const liveEnd = periodEnd(liveStart);
-    const isLiveDue = e => {
+    // Same as Guild Hall/Keep: key off whichever pay period is on screen
+    // (the date arrows), not hardcoded to today's real fortnight.
+    const { start: viewStart, end: viewEnd } = displayRange();
+    const isDueThisView = e => {
       const d = toDateOnly(parseISO(e.t.date));
-      return d >= liveStart && d <= liveEnd;
+      return d >= viewStart && d <= viewEnd;
     };
-    const entries = dungeonCurrentEntries().slice().sort((a, b) => {
-      const aCur = isLiveDue(a) ? 0 : 1;
-      const bCur = isLiveDue(b) ? 0 : 1;
+    const entries = dungeonCurrentEntries(viewStart, viewEnd).slice().sort((a, b) => {
+      const aCur = isDueThisView(a) ? 0 : 1;
+      const bCur = isDueThisView(b) ? 0 : 1;
       if(aCur !== bCur) return aCur - bCur;
       return a.t.date < b.t.date ? -1 : (a.t.date > b.t.date ? 1 : 0);
     });
-    const bar = '<div class="dungeon-bar" data-dungeon-close="1">Boss Dungeon</div>';
+    // Each Dungeon tile is its own boss portrait, so there's no single
+    // consistent sub-tile icon to flank the header with -- the generic
+    // Dungeon archway (the building's own symbol) stands in instead.
+    const barIcon = `<span class="building-bar-icon">${dungeonIconSVG()}</span>`;
+    const bar = `<div class="dungeon-bar" data-dungeon-close="1">${barIcon}Boss Dungeon${barIcon}</div>`;
     if(entries.length === 0){
       return bar + '<div class="reserve-stats-note">No bosses linked to a bill yet.</div>';
     }
-    const showDots = isCurrentPeriodShown();
-    const { start: viewStart, end: viewEnd } = displayRange();
     const today = toDateOnly(new Date());
     const tiles = entries.map(e => {
       const t = e.t, boss = e.boss;
@@ -5585,16 +5734,13 @@ var qrcode = function() {
       // bar in place of the usual tag line, so the expanded row keeps
       // showing this boss exactly the way the tile did, just full-width.
       if(menuOpen) return buildTxRowHTML(t, today);
-      const d = toDateOnly(parseISO(t.date));
-      const inPeriod = showDots && d >= viewStart && d <= viewEnd;
-      const nameHTML = inPeriod
-        ? '<span class="current-period-dot dot-left"></span>' + escapeHtml(boss.name || "Unnamed") + '<span class="current-period-dot dot-right"></span>'
-        : escapeHtml(boss.name || "Unnamed");
+      const inPeriod = isDueThisView(e);
       const starting = Number(boss.startingBalance || 0);
       const hpPct = starting > 0 ? Math.max(0, Math.min(100, (Number(boss.balance || 0) / starting) * 100)) : 0;
-      return `<div class="shop-tile" data-dungeon-sub-id="${t.id}">
+      return `<div class="shop-tile${inPeriod ? " current-fortnight-tile" : ""}" data-dungeon-sub-id="${t.id}">
         <span class="shop-tile-icon dungeon-sub-icon">${bossPortraitSVG(boss)}</span>
-        <div class="shop-tile-name">${nameHTML}</div>
+        <div class="shop-tile-name shop-tile-name-lg">${escapeHtml(boss.name || "Unnamed")}</div>
+        <div class="shop-tile-due">${fmtDate(parseISO(t.date), state.settings.dateFormat)}</div>
         <div class="shop-tile-gold">${fmtMoney(effectiveAmount(t))}</div>
         <div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${hpPct}%;background:var(--coral);"></div></div>
       </div>`;
@@ -5603,16 +5749,17 @@ var qrcode = function() {
   }
 
   function buildTxListHTML(){
+    const { start: txListViewStart, end: txListViewEnd } = displayRange();
     if(guildHallViewActive){
-      const bills = guildHallCurrentBills();
+      const bills = guildHallCurrentBills(txListViewStart, txListViewEnd);
       return { html: buildGuildHallGridHTML(), count: bills.length };
     }
     if(dungeonViewActive){
-      const entries = dungeonCurrentEntries();
+      const entries = dungeonCurrentEntries(txListViewStart, txListViewEnd);
       return { html: buildDungeonGridHTML(), count: entries.length };
     }
     if(keepViewActive){
-      const bills = keepCurrentBills();
+      const bills = keepCurrentBills(txListViewStart, txListViewEnd);
       return { html: buildKeepGridHTML(), count: bills.length };
     }
     if(shopViewMode() === "list"){
@@ -5662,13 +5809,16 @@ var qrcode = function() {
     // name the same way the gold pouch does for a Shop Envelope -- a
     // visual tell of what kind of row this is before you even read it.
     const bossKey = t.seriesId || t.id;
-    const linkedBoss = !shopEnvelope ? state.bosses.find(b => b.linkedKey && b.linkedKey === bossKey) : null;
+    const linkedBoss = !shopEnvelope
+      ? (state.bosses.find(b => b.linkedKey && b.linkedKey === bossKey)
+         || (t.chargeBossId ? state.bosses.find(b => b.id === t.chargeBossId) : null))
+      : null;
     return `<div class="tx-row${menuOpen ? " menu-active" : ""}${shopEnvelope ? " tx-row-shop" : ""}" data-id="${t.id}">
       ${acctBarHTML}
       ${shopEnvelope ? ('<span class="shop-pouch-row-icon" title="' + escapeHtml(shopKindName(shopEnvelopeKind(t))) + '">' + shopKindIconSVG(shopEnvelopeKind(t)) + '</span>') : ""}
       ${linkedBoss ? ('<span class="boss-portrait-row-icon" title="' + escapeHtml(linkedBoss.name || "Boss") + '">' + bossPortraitSVG(linkedBoss) + '</span>') : ""}
       <div class="tx-main">
-        <div class="tx-label ${amtClass}"><span class="tx-label-text">${escapeHtml(t.label)}</span>${t.seriesId ? `<span class="repeat-badge" title="${REPEAT_LABELS[t.repeat]||"Repeating"}">${REPEAT_ICON}</span>` : ""}${t.type === "transaction" ? `<span class="txn-monster-badge" title="${escapeHtml(t.label || "Transaction")}">${monsterIconSVGForLabel(t.label)}</span>` : ""}</div>
+        <div class="tx-label ${amtClass}"><span class="tx-label-text">${escapeHtml(t.label)}</span>${t.seriesId ? `<span class="repeat-badge" title="${REPEAT_LABELS[t.repeat]||"Repeating"}">${REPEAT_ICON}</span>` : ""}${(t.type === "transaction" && !t.chargeBossId) ? `<span class="txn-monster-badge" title="${escapeHtml(t.label || "Transaction")}">${monsterIconSVGForLabel(t.label)}</span>` : ""}</div>
         ${(() => {
           // A Shop Envelope shows how much gold is left this period
           // instead of the usual tag/description line -- same idea as
@@ -5721,23 +5871,18 @@ var qrcode = function() {
   // ---------- List View ----------
   // The original, pre-tile layout: everything ungrouped into one flat
   // list (Guild Hall/The Keep/Boss Dungeon's bills just show up as normal
-  // rows, sorted however the Sort control says), except Marketplace/
-  // Stables/Tavern, which pin as rows at the very top instead of
-  // disappearing into tiles -- same sticky treatment the Guild Hall/Keep/
-  // Dungeon bars use, just holding real rows instead of a label.
+  // rows, sorted however the Sort control says). Marketplace/Stables/
+  // Tavern are left out here -- they always render as the pinned gold
+  // tiles above (buildShopTileRowHTML), in both layouts, so including
+  // them here too would show them twice.
   function buildFlatListModeHTML(){
     const today = toDateOnly(new Date());
-    const list = filteredSortedTx();
-    const envelopeList = list.filter(isShopEnvelope);
-    const restList = list.filter(t => !isShopEnvelope(t));
-    if(envelopeList.length === 0 && restList.length === 0){
+    const restList = filteredSortedTx().filter(t => !isShopEnvelope(t));
+    if(restList.length === 0){
       return { html: '<div class="empty-state">No transactions in this range.<br>Tap + Bill or + Income to add one.</div>', count: 0 };
     }
-    const pinnedHTML = envelopeList.length
-      ? `<div class="pinned-envelope-rows">${envelopeList.map(t => buildTxRowHTML(t, today)).join("")}</div>`
-      : "";
     const restHTML = restList.map(t => buildTxRowHTML(t, today)).join("");
-    return { html: pinnedHTML + restHTML, count: envelopeList.length + restList.length };
+    return { html: restHTML, count: restList.length };
   }
 
   // The status-picker + action-menu pair that drops down under a row once
@@ -5947,6 +6092,7 @@ var qrcode = function() {
       $("#hpBarGhost").style.width = "0%";
       $("#hpBarRed").style.width = "0%";
       $("#hpBarBlack").style.width = "0%";
+      $("#hpBarGold").style.width = "0%";
       $("#hpCurrentLabel").textContent = "$0.00";
       $("#hpMaxLabel").textContent = "No income yet";
       return;
@@ -5976,28 +6122,43 @@ var qrcode = function() {
     // stays there, same as real HP damage.
     const paidTotal = periodBills.filter(t => t.status === "paid").reduce((s,t) => s + Number(t.amount || 0), 0);
     const committed = unpaidTotal + pendingOrangeTotal + pendingYellowTotal + paidTotal;
-    const green = maxHP - committed;
 
     const fillEl = $("#hpBarFill");
     const yellowEl = $("#hpBarYellow");
     const ghostEl = $("#hpBarGhost");
     const redEl = $("#hpBarRed");
     const blackEl = $("#hpBarBlack");
+    const goldEl = $("#hpBarGold");
     const safeMax = maxHP > 0 ? maxHP : 1;
+
+    // The Alchemist's held gold -- siphoned straight out of Remaining, live
+    // and fully reversible (no real transaction). It's a protected floor,
+    // not a shield: it comes off the top of what's spendable right away,
+    // but once set aside it's the LAST thing damage can ever reach --
+    // every bill/encounter has to eat through all of green (and then the
+    // scaled-down committed bars below) before it could ever touch gold.
+    const alchemistGoldRaw = Number(state.settings.carryoverGoal) || 0;
+    const alchemistGold = Math.max(0, Math.min(alchemistGoldRaw, maxHP > 0 ? maxHP : 0));
+    const effectiveMax = maxHP - alchemistGold;
+    const green = effectiveMax - committed;
+    const goldPct = Math.max(0, Math.min(100, (alchemistGold / safeMax) * 100));
+    const spacePct = 100 - goldPct;
 
     if(green < 0){
       wrap.classList.add("hp-critical");
       // Over max: black/red/yellow/orange together would add up to more
-      // than 100% of the bar. Scale all four down proportionally (instead
-      // of letting black claim its full share first and squeeze the rest
-      // into whatever's left) so the bar still reflects their real dollar
-      // ratio to each other rather than reading as solid black.
+      // than the space left after gold claims its slice. Scale all four
+      // down proportionally (instead of letting black claim its full
+      // share first and squeeze the rest into whatever's left) so the bar
+      // still reflects their real dollar ratio to each other rather than
+      // reading as solid black -- and so gold keeps its full width even
+      // while everything else is getting crushed.
       const rawBlack = (paidTotal / safeMax) * 100;
       const rawRed = (unpaidTotal / safeMax) * 100;
       const rawYellow = (pendingYellowTotal / safeMax) * 100;
       const rawGhost = (pendingOrangeTotal / safeMax) * 100;
       const rawTotal = rawBlack + rawRed + rawYellow + rawGhost;
-      const scale = rawTotal > 100 ? 100 / rawTotal : 1;
+      const scale = rawTotal > spacePct ? spacePct / rawTotal : 1;
       const blackPct = Math.max(0, rawBlack * scale);
       const redPct = Math.max(0, rawRed * scale);
       const yellowPct = Math.max(0, rawYellow * scale);
@@ -6009,11 +6170,11 @@ var qrcode = function() {
       ghostEl.style.width = ghostPct + "%";
     } else {
       wrap.classList.remove("hp-critical");
-      const greenPct = Math.max(0, Math.min(100, (green / safeMax) * 100));
-      const blackPct = Math.max(0, Math.min(100 - greenPct, (paidTotal / safeMax) * 100));
-      const redPct = Math.max(0, Math.min(100 - greenPct - blackPct, (unpaidTotal / safeMax) * 100));
-      const yellowPct = Math.max(0, Math.min(100 - greenPct - blackPct - redPct, (pendingYellowTotal / safeMax) * 100));
-      const ghostPct = Math.max(0, Math.min(100 - greenPct - blackPct - redPct - yellowPct, (pendingOrangeTotal / safeMax) * 100));
+      const greenPct = Math.max(0, Math.min(spacePct, (green / safeMax) * 100));
+      const blackPct = Math.max(0, Math.min(spacePct - greenPct, (paidTotal / safeMax) * 100));
+      const redPct = Math.max(0, Math.min(spacePct - greenPct - blackPct, (unpaidTotal / safeMax) * 100));
+      const yellowPct = Math.max(0, Math.min(spacePct - greenPct - blackPct - redPct, (pendingYellowTotal / safeMax) * 100));
+      const ghostPct = Math.max(0, Math.min(spacePct - greenPct - blackPct - redPct - yellowPct, (pendingOrangeTotal / safeMax) * 100));
       fillEl.style.width = greenPct + "%";
       blackEl.style.width = blackPct + "%";
       redEl.style.width = redPct + "%";
@@ -6021,6 +6182,7 @@ var qrcode = function() {
       ghostEl.style.width = ghostPct + "%";
       fillEl.classList.remove("hp-low");
     }
+    goldEl.style.width = goldPct + "%";
 
     $("#hpCurrentLabel").textContent = fmtMoney(green);
     $("#hpMaxLabel").textContent = fmtMoney(maxHP);
@@ -6201,15 +6363,78 @@ var qrcode = function() {
     $("#shopItemLabel").textContent = t.label;
     $("#shopGoldAmount").textContent = getEnvelopeRemaining(t) + "G";
     $("#shopSpendInput").value = "";
+    populateShopPaidWithSelect();
+    $("#shopCardChargeInput").value = "";
     openSheet("shopOverlay");
     setTimeout(() => $("#shopSpendInput").focus(), 50);
   }
+  // Rebuilds the "Paid with" dropdown from the current boss list each time
+  // the Teller opens (a boss could've been added/renamed/deleted since
+  // last time), and resets it back to Cash/Debit -- the default, unchanged
+  // behavior -- so a boss choice never carries over from a previous visit.
+  // Also relabels the "From account" toggle buttons from the two real
+  // accounts (names follow Settings, same as everywhere else).
+  function populateShopPaidWithSelect(){
+    const sel = $("#shopPaidWithSelect");
+    if(!sel) return;
+    const bossOptions = (state.bosses || [])
+      .map(b => `<option value="${b.id}">${escapeHtml(b.name || "Unnamed")}</option>`).join("");
+    sel.innerHTML = '<option value="">Cash / Debit</option>' + bossOptions;
+    sel.value = "";
+    $("#shopCardChargeRow").style.display = "none";
+    const btn1 = $("#shopPaidFromAcctBtn1"), btn2 = $("#shopPaidFromAcctBtn2");
+    if(btn1 && btn2){
+      btn1.textContent = account1Name();
+      btn2.textContent = account2Name();
+      btn2.style.display = accountCount() === 2 ? "" : "none";
+      setShopPaidFromAccount(false);
+    }
+  }
+  // Which real account a boss's OWN linked recurring bill is already
+  // tagged to -- used only to pick a sensible starting point for the
+  // "From account" toggle when a boss is chosen, since paying off a
+  // boss normally comes from the same account its bill already draws
+  // from. The user can still switch it before saving either way.
+  function bossDefaultIsAccount2(boss){
+    if(!boss || !boss.linkedKey) return false;
+    const linkedTx = state.transactions.find(t =>
+      t.type !== "income" && !isShopEnvelope(t) && (t.seriesId || t.id) === boss.linkedKey);
+    return linkedTx ? isAffirmTag(linkedTx.tags) : false;
+  }
+  function setShopPaidFromAccount(toAccount2){
+    const btn1 = $("#shopPaidFromAcctBtn1"), btn2 = $("#shopPaidFromAcctBtn2");
+    if(!btn1 || !btn2) return;
+    btn1.classList.toggle("active", !toAccount2);
+    btn2.classList.toggle("active", !!toAccount2);
+  }
+  $("#shopPaidFromAcctRow").addEventListener("click", (e) => {
+    const btn = e.target.closest(".account-toggle-btn");
+    if(!btn) return;
+    setShopPaidFromAccount(btn.dataset.account === "2");
+  });
   function closeShopOverlay(){
     shopTxId = null;
     closeSheet("shopOverlay");
     renderAll();
   }
   $("#shopCloseBtn").addEventListener("click", closeShopOverlay);
+
+  // Switching to a boss reveals "amount paid" -- a separate, optional
+  // payment toward that card, left blank by default (it's its own
+  // number, not tied to what was just bought). Switching back to
+  // Cash/Debit hides it again. The "From account" toggle defaults to
+  // whichever account that boss's own linked bill already draws from --
+  // still a plain toggle the user can flip before saving.
+  $("#shopPaidWithSelect").addEventListener("change", () => {
+    const chargeRow = $("#shopCardChargeRow");
+    const bossId = $("#shopPaidWithSelect").value;
+    const isCard = bossId !== "";
+    chargeRow.style.display = isCard ? "" : "none";
+    if(isCard){
+      const boss = state.bosses.find(b => b.id === bossId);
+      setShopPaidFromAccount(bossDefaultIsAccount2(boss));
+    }
+  });
 
   let shopThanksTimer = null;
   function showShopThanksToast(message){
@@ -6227,25 +6452,83 @@ var qrcode = function() {
     if(!t) return;
     const spendRaw = $("#shopSpendInput").value.trim();
     const spend = parseFloat(spendRaw);
-    if(spendRaw === "" || isNaN(spend) || spend <= 0) return;
+    const hasBuy = spendRaw !== "" && !isNaN(spend) && spend > 0;
+    // Nothing typed in Buy Items -- most often after already using Sell on
+    // its own (which does its own gold-back work immediately). Checkout
+    // then just acts as "I'm done here": no purchase to log, but still
+    // closes with the same friendly send-off as an actual buy, instead of
+    // silently doing nothing.
+    let paidWithBossId = "";
+    if(hasBuy){
     addEnvelopeSpend(t, spend);
-    // Remaining = Balance - Outstanding. The envelope's own remaining gold
-    // already counts toward Outstanding (via effectiveAmount) whenever
-    // this bill is still unpaid/pending-not-deducted -- so if the balance
-    // itself never moves, Remaining quietly inflates by whatever you just
-    // spent. Mirror exactly what marking a bill paid does: pull the spend
-    // out of the real account balance too, same moment, same amount. Once
-    // the bill is already paid/deducted, its full amount left the balance
-    // in one lump already, so don't double-deduct here.
-    const stillOutstanding = t.status === "unpaid" || (t.status === "pending" && !t.deducted);
-    if(stillOutstanding){
-      const { get: getBal, set: setBal } = balanceFnsFor(t);
-      if(getBal() !== null) setBal(round2(Number(getBal()) - spend));
+    paidWithBossId = $("#shopPaidWithSelect").value;
+    if(paidWithBossId){
+      // Charged to a card: the cash hasn't actually left the bank yet
+      // (it leaves days later when the card bill gets paid), so the real
+      // balance does NOT move here -- only the envelope's budget above.
+      // The boss takes on new debt equal to exactly what was charged --
+      // the buy amount itself -- on both its balance and starting balance.
+      const boss = state.bosses.find(b => b.id === paidWithBossId);
+      if(boss){
+        boss.balance = round2(Number(boss.balance || 0) + spend);
+        boss.startingBalance = round2(Number(boss.startingBalance || 0) + spend);
+
+        // "Amount paid" -- a separate payment toward this same card,
+        // logged in the same trip (can be more, less, or skipped). Knocks
+        // straight off the boss's balance right now (paying debt down,
+        // not raising the ceiling), and creates its own new transaction --
+        // pending, not yet deducted -- so it counts toward Outstanding
+        // immediately like any bill, until it's later marked paid and the
+        // real account actually gets hit, days from now.
+        const paidRaw = $("#shopCardChargeInput").value.trim();
+        const paidAmt = parseFloat(paidRaw);
+        if(paidRaw !== "" && !isNaN(paidAmt) && paidAmt > 0){
+          boss.balance = round2(Number(boss.balance || 0) - paidAmt);
+          const acctBtn2 = $("#shopPaidFromAcctBtn2");
+          const acctTag = (acctBtn2 && acctBtn2.classList.contains("active")) ? account2Name() : "";
+          state.transactions.push({
+            id: uid(),
+            label: `${boss.name || "Card"} payment`,
+            amount: paidAmt,
+            date: fmtISO(new Date()),
+            description: "",
+            status: "pending",
+            type: "transaction",
+            repeat: "none",
+            everyXDays: null,
+            seriesId: null,
+            tags: acctTag ? [acctTag] : [],
+            deducted: false,
+            url: "",
+            // Not a recurring linked bill (boss.linkedKey stays reserved
+            // for that), but still ties this one-off payment to the boss
+            // it's paying down, so its row can show that boss's own
+            // portrait icon instead of a random monster badge.
+            chargeBossId: boss.id
+          });
+        }
+      }
+    } else {
+      // Cash/Debit (unchanged): Remaining = Balance - Outstanding. The
+      // envelope's own remaining gold already counts toward Outstanding
+      // (via effectiveAmount) whenever this bill is still unpaid/pending-
+      // not-deducted -- so if the balance itself never moves, Remaining
+      // quietly inflates by whatever you just spent. Mirror exactly what
+      // marking a bill paid does: pull the spend out of the real account
+      // balance too, same moment, same amount. Once the bill is already
+      // paid/deducted, its full amount left the balance in one lump
+      // already, so don't double-deduct here.
+      const stillOutstanding = t.status === "unpaid" || (t.status === "pending" && !t.deducted);
+      if(stillOutstanding){
+        const { get: getBal, set: setBal } = balanceFnsFor(t);
+        if(getBal() !== null) setBal(round2(Number(getBal()) - spend));
+      }
+    }
     }
     shopTxId = null;
     closeSheet("shopOverlay");
     renderAll();
-    showShopThanksToast();
+    showShopThanksToast(paidWithBossId ? "Charged to card -- come again." : undefined);
   });
 
   // "Sell items back" -- the undo button for a Teller purchase made by
@@ -6253,6 +6536,10 @@ var qrcode = function() {
   // is the exact mirror of Check Out -- it goes back onto the envelope's
   // remaining gold, and back onto the real account balance too, using the
   // same still-outstanding check so it matches however the original spend
+  // NOTE: this only reverses a Cash/Debit purchase. Which boss (if any)
+  // a given Checkout was charged to isn't recorded per-purchase, only
+  // folded into that boss's balance -- so Sell can't tell whether to also
+  // walk a card's debt back down, and never touches boss balances.
   // was actually applied.
   $("#shopSellBtn").addEventListener("click", () => {
     const t = state.transactions.find(x => x.id === shopTxId);
@@ -6931,16 +7218,33 @@ var qrcode = function() {
     }
   }
 
-  // Plays the row-attack shake/flash on a transaction row, then runs
-  // `onDone` (the actual state commit + re-render) once the animation
+  // Finds whatever element is currently showing this transaction on
+  // screen, whether it rendered as a normal full-width row or as one of
+  // the small square tiles (a gold envelope, or a Guild Hall/Keep/Dungeon
+  // sub-tile) -- Pay Confirm collapses a tapped tile back to its compact
+  // form before the sheet opens, so by the time the hit animation needs
+  // to play, it's the tile in the DOM, not a .tx-row.
+  function findTxDisplayEl(id){
+    return document.querySelector('.tx-row[data-id="' + id + '"]') ||
+      document.querySelector('[data-shop-tile-id="' + id + '"]') ||
+      document.querySelector('[data-guild-sub-id="' + id + '"]') ||
+      document.querySelector('[data-keep-sub-id="' + id + '"]') ||
+      document.querySelector('[data-dungeon-sub-id="' + id + '"]');
+  }
+
+  // Plays the row-attack shake/flash on a transaction row (or tile), then
+  // runs `onDone` (the actual state commit + re-render) once the animation
   // finishes -- so the hit visibly lands before the name/HP bar/outstanding
-  // figure actually drop to their new values. If the row isn't currently
-  // rendered (filtered out of the visible period, etc.) there's nothing to
-  // animate, so just commit immediately.
-  function playRowAttackFx(id, onDone){
-    const row = document.querySelector('.tx-row[data-id="' + id + '"]');
+  // figure actually drop to their new values. If nothing's currently
+  // rendered for it (filtered out of the visible period, etc.) there's
+  // nothing to animate, so just commit immediately. `landing` tells it
+  // which slash to play: "paid" (the default) is the green finishing
+  // blow -- the full gold one-two combo; "pending-deducted" is the
+  // lighter yellow hit -- a single amber streak instead.
+  function playRowAttackFx(id, onDone, landing){
+    const row = findTxDisplayEl(id);
     if(!row){ onDone(); return; }
-    spawnHitFx(row);
+    spawnHitFx(row, landing === "pending-deducted");
     row.classList.add("row-attacking");
     setTimeout(() => {
       row.classList.remove("row-attacking");
@@ -7012,8 +7316,11 @@ var qrcode = function() {
     // Only a transition that newly takes money out (unpaid/pending ->
     // pending-deducted) is a real "attack" on the balance -- play the hit
     // first and let it land before the row updates. Anything else (backing
-    // a payment out) just applies immediately.
-    if(!wasOut && willBeOut) playRowAttackFx(id, doApply);
+    // a payment out) just applies immediately. This path only ever lands
+    // on pending-deducted (yellow), never paid (green) -- Paid goes
+    // through the Pay Confirm sheet instead -- so it's always the single
+    // amber streak, never the full green combo.
+    if(!wasOut && willBeOut) playRowAttackFx(id, doApply, "pending-deducted");
     else doApply();
   }
 
@@ -7031,14 +7338,17 @@ var qrcode = function() {
 
   // ---------- Pay-off hit animations ----------
   // Fired once a bill/transaction actually becomes "paid" -- a golden
-  // one-two combo swept across the paid row's own name: first streak in
+  // one-two combo swept across the row/tile's own name: first streak in
   // from the right, then a beat later the second in from the left. Sized
   // and positioned to the row (falls back to a center-screen sweep if the
-  // row isn't on screen to measure).
-  function spawnHitFx(rowEl){
+  // row isn't on screen to measure). A pending-deducted (yellow) hit calls
+  // this with `single: true` instead -- one lighter, amber-tinted streak,
+  // no second pass, so it reads as a lesser hit than the green finishing
+  // blow.
+  function spawnHitFx(rowEl, single){
     const layer = document.getElementById("hitFxLayer");
     if(!layer) return;
-    const nameEl = rowEl ? (rowEl.querySelector(".tx-label") || rowEl) : null;
+    const nameEl = rowEl ? (rowEl.querySelector(".tx-label") || rowEl.querySelector(".shop-tile-name") || rowEl) : null;
     const rect = nameEl ? nameEl.getBoundingClientRect() : null;
 
     const position = (el) => {
@@ -7055,9 +7365,14 @@ var qrcode = function() {
     };
 
     const first = document.createElement("div");
-    first.className = "hfx-slash hfx-slash-a";
+    first.className = "hfx-slash hfx-slash-a" + (single ? " hfx-slash-yellow" : "");
     position(first);
     layer.appendChild(first);
+
+    if(single){
+      setTimeout(() => { first.remove(); }, 900);
+      return;
+    }
 
     const second = document.createElement("div");
     second.className = "hfx-slash hfx-slash-b";
@@ -7163,13 +7478,26 @@ var qrcode = function() {
         showUndoToast("Payment updated.", undoTxId, prevFields, balanceSlot);
       };
 
+      // Which hit (if any) plays is about the STATUS changing, not the
+      // dollar amount -- landing on Paid from pending-deducted moves no
+      // new money (it was already counted as out), but it's still the
+      // finishing blow and needs its own double-slash every time you
+      // newly mark something Paid. Same idea for pending-deducted: the
+      // single amber streak plays on newly landing there, not only when
+      // deltaOut happens to be positive.
+      const wasPaid = t.status === "paid";
+      const wasPendingDeducted = t.status === "pending" && !!t.deducted;
+      const enteringPaid = target === "paid" && !wasPaid;
+      const enteringPendingDeducted = target === "pending-deducted" && !wasPendingDeducted;
+      const slashLanding = enteringPaid ? "paid" : (enteringPendingDeducted ? "pending-deducted" : null);
+
       // Close the sheet first so the row is visible underneath, then let
       // the hit land on it -- shake, flash, HP bar blink -- before the
       // amount/status actually commit to their new values.
       payConfirmTxId = null;
       closeSheet("payConfirmOverlay");
-      if(deltaOut > 0){
-        playRowAttackFx(undoTxId, commit);
+      if(slashLanding){
+        playRowAttackFx(undoTxId, commit, slashLanding);
       } else {
         commit();
       }
@@ -7199,8 +7527,13 @@ var qrcode = function() {
       const target = pickBtn.dataset.pickStatus;
       openStatusPickerId = null;
       openActionMenuId = null;
+      // Collapse the picker/menu back to the plain tile (or row) FIRST,
+      // for every target, not just "paid" -- so the hit animation that
+      // follows lands on the actual tile/row, not on the still-expanded
+      // picker view, and the picker itself is already gone instead of
+      // lingering through the shake/flash.
+      renderTxList();
       if(target === "paid"){
-        renderTxList();
         openPayConfirm(id);
       } else {
         applyStatusTarget(id, target);
@@ -7296,8 +7629,13 @@ var qrcode = function() {
       const target = pickBtn.dataset.pickStatus;
       openStatusPickerId = null;
       openActionMenuId = null;
+      // Same as the shop-tile-row picker -- collapse back to the plain
+      // tile/row for every target before anything else happens, so the
+      // hit animation lands on it instead of on a still-expanded picker,
+      // and the picker is already closed rather than lingering through
+      // the shake/flash.
+      renderTxList();
       if(target === "paid"){
-        renderTxList();
         openPayConfirm(id);
       } else {
         applyStatusTarget(id, target);
@@ -8067,9 +8405,23 @@ var qrcode = function() {
     }
     renderAll();
   }
+  // .list-filter-menu is position:fixed now (view-row's own
+  // overflow-x:auto was clipping it vertically), so its on-screen spot
+  // has to be set in JS from the toggle button's real position right
+  // before it opens, instead of relying on CSS top/left.
+  function positionFixedMenu(wrapId, menuId){
+    const wrap = $("#" + wrapId);
+    const menu = $("#" + menuId);
+    if(!wrap || !menu) return;
+    const r = wrap.getBoundingClientRect();
+    menu.style.top = (r.bottom + 6) + "px";
+    menu.style.left = Math.max(8, r.left) + "px";
+  }
+
   $("#sortByLabel").addEventListener("click", () => {
     const isOpen = !$("#sortByWrap").classList.contains("open");
     closeAllQuickMenus("sortByWrap");
+    if(isOpen) positionFixedMenu("sortByWrap", "sortByMenu");
     $("#sortByWrap").classList.toggle("open", isOpen);
   });
   $$(".list-filter-option[data-sortcycle]").forEach(btn => {
@@ -8081,6 +8433,7 @@ var qrcode = function() {
   $("#listFilterToggle").addEventListener("click", () => {
     const isOpen = !$("#listFilterWrap").classList.contains("open");
     closeAllQuickMenus("listFilterWrap");
+    if(isOpen) positionFixedMenu("listFilterWrap", "listFilterMenu");
     $("#listFilterWrap").classList.toggle("open", isOpen);
   });
   $$(".list-filter-option[data-filter]").forEach(btn => {
@@ -8469,7 +8822,23 @@ var qrcode = function() {
     if(name.includes("affirm")){
       return '<img src="' + AFFIRM_NINJA_IMG + '" alt="Ninja" style="display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;">';
     }
+    if(name.includes("apple")){
+      // A one-of-a-kind "frost knight" portrait for the Apple Card boss --
+      // silver armor, white highlights, a blue visor -- a nod to the
+      // brand's own minimalist palette WITHOUT using its actual logo or
+      // mark, which can't be reproduced here. Same 10x10 pixel-art
+      // technique as every other boss, just its own fixed design instead
+      // of a randomly-picked one.
+      return bossGridSVG(APPLE_BOSS_PORTRAIT);
+    }
     const variant = bossPortraitVariant(b);
+    return bossGridSVG(variant);
+  }
+  // Shared renderer for the 10x10 pixel-art grid format used by every
+  // boss/monster portrait (grid of color-index numbers + a colors map) --
+  // factored out so a fixed, name-matched portrait (like Apple Card's)
+  // renders through the exact same path as the randomly-picked ones.
+  function bossGridSVG(variant){
     let rects = "";
     variant.grid.forEach((row, r) => {
       row.forEach((code, c) => {
@@ -8479,6 +8848,22 @@ var qrcode = function() {
     });
     return '<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">' + rects + '</svg>';
   }
+  // Fixed "frost knight" design for the Apple Card boss specifically --
+  // silver armor, white highlights, blue visor. Not Apple's logo or mark,
+  // just a palette nod; this never changes per-device the way the
+  // randomly-assigned boss portraits do.
+  const APPLE_BOSS_PORTRAIT = { grid: [
+      [0,0,1,1,1,1,1,1,0,0],
+      [0,1,2,2,2,2,2,2,1,0],
+      [1,2,2,3,2,2,3,2,2,1],
+      [1,2,4,4,2,2,4,4,2,1],
+      [1,2,2,2,2,2,2,2,2,1],
+      [1,2,2,1,1,1,1,2,2,1],
+      [0,1,2,2,2,2,2,2,1,0],
+      [0,0,1,2,2,2,2,1,0,0],
+      [0,0,0,1,1,1,1,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0]
+    ], colors: {1:"#1a1a1a",2:"#c9ced6",3:"#ffffff",4:"#2ea0ff"} };
 
   // Random-encounter monsters get their OWN pool, completely separate from
   // BOSS_PORTRAIT_VARIANTS, so a one-off Transaction's monster can never be
@@ -9538,6 +9923,7 @@ var qrcode = function() {
     const v = e.target.value.replace(/[$,]/g, "");
     state.settings.carryoverGoal = v === "" ? 0 : Number(v);
     renderSafeToSpend();
+    updateHpBar();
     save();
   }
   function onCarryoverFocus(e){
