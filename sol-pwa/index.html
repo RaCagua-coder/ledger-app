@@ -152,7 +152,8 @@
 
   /* HP bar */
   .hp-bar-wrap{background:#0a140d;border-bottom:1px solid #2a4a30;padding:8px 12px 10px;}
-  .hp-bar-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;}
+  .hp-bar-stack{position:relative;}
+  .hp-bar-top{display:flex;justify-content:flex-end;align-items:baseline;margin-bottom:5px;}
   .hp-bar-name{font-size:11px;font-weight:800;letter-spacing:.06em;color:#a3abbd;}
   .hp-bar-nums{font-size:13px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text);white-space:nowrap;}
   .hp-bar-track{position:relative;height:16px;border-radius:8px;background:#1c2b20;border:1px solid #2a4a30;display:flex;flex-direction:row-reverse;overflow:hidden;box-shadow:inset 0 2px 5px rgba(0,0,0,.7),inset 0 -1px 0 rgba(255,255,255,.04),0 1px 0 rgba(255,255,255,.03);}
@@ -177,6 +178,32 @@
     box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 -3px 4px rgba(0,0,0,.45),inset 1px 0 0 rgba(255,255,255,.2);
   }
   .hp-bar-wrap.hp-critical .hp-bar-nums{color:var(--coral);}
+
+  /* Affirm shield -- NOT a full-width bar of its own. It's a short purple
+     block the exact same height as SOL's HP track, sitting directly ON
+     TOP of it (bottom:100% of .hp-bar-track-wrap = flush against the
+     track's own top edge, zero gap), only as wide as $current maps to on
+     SOL's own Max HP ruler. The $ label is a separate element that
+     follows just to the right of the bar's own right edge (a small gap,
+     never touching) at that same row -- if the bar is wide enough that
+     the label's position would reach into where SOL's own numbers sit,
+     it's fine for it to carry on up into that row rather than being
+     capped or wrapped. */
+  .hp-bar-track-wrap{position:relative;}
+  .shield-overlay-bar{
+    position:absolute;bottom:100%;left:0;height:16px;width:0%;z-index:5;
+    border-radius:6px;background-color:var(--affirm-bright);
+    background-image:linear-gradient(to bottom,rgba(255,255,255,.5) 0%,rgba(255,255,255,.15) 32%,rgba(255,255,255,0) 50%,rgba(0,0,0,.22) 100%);
+    box-shadow:0 0 0 1px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 3px rgba(0,0,0,.45);
+    transition:width .4s ease;opacity:.94;
+  }
+  .shield-bar-label{
+    position:absolute;bottom:100%;left:0;height:16px;margin-left:8px;z-index:6;
+    display:flex;align-items:center;white-space:nowrap;
+    font-size:10.5px;font-weight:800;font-family:'JetBrains Mono',monospace;color:#fff;
+    text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 4px rgba(0,0,0,.9);
+    transition:left .4s ease;
+  }
 
   .sts-mini-bar{
     display:flex;background:#0d1a12;border-bottom:1px solid #2a4a30;
@@ -1323,17 +1350,30 @@
 <div class="app">
 
   <div class="hp-bar-wrap" id="hpBarWrap">
-    <div class="hp-bar-top">
-      <span class="hp-bar-name">SOL</span>
-      <span class="hp-bar-nums"><span id="hpCurrentLabel">$0.00</span> / <span id="hpMaxLabel">$0.00</span></span>
-    </div>
-    <div class="hp-bar-track">
-      <div class="hp-bar-black" id="hpBarBlack"></div>
-      <div class="hp-bar-red" id="hpBarRed"></div>
-      <div class="hp-bar-ghost" id="hpBarGhost"></div>
-      <div class="hp-bar-yellow" id="hpBarYellow"></div>
-      <div class="hp-bar-fill" id="hpBarFill"></div>
-      <div class="hp-bar-gold" id="hpBarGold" title="Alchemist's gold -- held reserve, last to take damage"></div>
+    <div class="hp-bar-stack">
+      <div class="hp-bar-top">
+        <span class="hp-bar-nums"><span id="hpCurrentLabel">$0.00</span> / <span id="hpMaxLabel">$0.00</span></span>
+      </div>
+      <div class="hp-bar-track-wrap">
+        <!-- Affirm shield -- NOT a full-width bar: only as wide as
+             Affirm's own available balance maps to on SOL's own Max HP
+             ruler, same height as the track, sitting flush on top of it
+             (bottom:100% of this wrap = zero gap against the track's own
+             top edge). id="shieldBarWrap" still names it so JS can
+             show/hide by account settings. The $ label follows just to
+             its right, never touching, and is free to ride up into SOL's
+             own numbers row above if the bar is wide enough to reach it. -->
+        <div class="shield-overlay-bar" id="shieldBarWrap"></div>
+        <span class="shield-bar-label" id="shieldCurrentLabel">$0.00</span>
+        <div class="hp-bar-track">
+          <div class="hp-bar-black" id="hpBarBlack"></div>
+          <div class="hp-bar-red" id="hpBarRed"></div>
+          <div class="hp-bar-ghost" id="hpBarGhost"></div>
+          <div class="hp-bar-yellow" id="hpBarYellow"></div>
+          <div class="hp-bar-fill" id="hpBarFill"></div>
+          <div class="hp-bar-gold" id="hpBarGold" title="Alchemist's gold -- held reserve, last to take damage"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -6022,6 +6062,7 @@ var qrcode = function() {
       affirmRemainingEl.textContent = fmtMoney(affirmRemaining);
       affirmRemainingEl.className = "f-value amt " + (affirmRemaining < 0 ? "remaining-neg" : "remaining-pos");
     }
+    updateShieldBar(affirmBal, affirmOutstanding);
 
     // "Left" in the period status strip = combined remaining across whichever
     // account balances are actually set (bank and/or Affirm).
@@ -6043,6 +6084,36 @@ var qrcode = function() {
 
     renderSafeToSpend();
     updateHpBar();
+  }
+
+  // Affirm's shield bar -- stacked directly on SOL's own HP bar, drawn to
+  // the SAME scale as that bar rather than its own 0-100%. So its fill
+  // width isn't "how much of Affirm's own balance is left" -- it's
+  // "where $155 would land on SOL's own Max HP ruler," the same way a
+  // Borderlands shield bar reads against the same width as health, not
+  // its own separate scale. Current = Affirm Balance minus Affirm
+  // Outstanding (what's actually left to absorb); the denominator is
+  // SOL's Max HP (getHpMax()), not Affirm's own balance.
+  function updateShieldBar(affirmBal, affirmOutstanding){
+    const bar = $("#shieldBarWrap");
+    const label = $("#shieldCurrentLabel");
+    const hasAffirm = accountCount() === 2 && affirmBal !== null && affirmBal !== undefined && affirmBal !== "";
+    if(!hasAffirm){
+      bar.style.display = "none";
+      label.style.display = "none";
+      return;
+    }
+    bar.style.display = "block";
+    label.style.display = "flex";
+    const current = Math.max(0, Number(affirmBal) - Number(affirmOutstanding || 0));
+    const solMaxHP = Number(getHpMax());
+    const safeMax = solMaxHP > 0 ? solMaxHP : 1;
+    const pct = Math.max(0, Math.min(100, (current / safeMax) * 100));
+    bar.style.width = pct + "%";
+    // label's left starts right where the bar's fill ends (same pct),
+    // then margin-left:8px (in CSS) keeps a gap so it never touches it
+    label.style.left = pct + "%";
+    label.textContent = fmtMoney(current);
   }
 
   function updateHpBar(){
