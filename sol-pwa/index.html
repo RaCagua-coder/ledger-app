@@ -5107,6 +5107,72 @@ var qrcode = function() {
     state.shopNamesMigratedV1 = true;
     if(changed) save();
   }
+  // One-time migration: the yellow "paid with gold" label treatment was
+  // added after some card-charged Marketplace/Stables/Tavern purchases
+  // already existed, so they were saved without the shopPurchase flag and
+  // stayed plain white. chargeBossId is only ever set by that same shop
+  // checkout flow, so any transaction carrying it really did come from one
+  // of those three trips -- safe to flag retroactively, once.
+  function migrateShopPurchaseGoldFlag(){
+    if(state.shopPurchaseGoldMigratedV1) return;
+    let changed = false;
+    state.transactions.forEach(t => {
+      if(t.chargeBossId && !t.shopPurchase){
+        t.shopPurchase = true;
+        changed = true;
+      }
+    });
+    state.shopPurchaseGoldMigratedV1 = true;
+    if(changed) save();
+  }
+  // One-time migration: purchase-log rows created before shopKind existed
+  // (both the Cash/Debit "<Shop> purchase" rows and the older card-charged
+  // ones) have no record of which of the three shops they came from, so
+  // their row still falls back to the boss portrait or no icon at all.
+  // A Cash/Debit row's label literally starts with the shop's name at the
+  // time it was made, so that's enough to recover it for those; a card-
+  // charged row's label is the boss's name instead, with nothing shop-
+  // specific left to go on, so those are left to keep showing the boss
+  // portrait -- still better than nothing, and no reason to guess wrong.
+  function migrateShopPurchaseKindFlag(){
+    if(state.shopPurchaseKindMigratedV1) return;
+    let changed = false;
+    const kindsInOrder = ["stable", "tavern", "market"];
+    state.transactions.forEach(t => {
+      if(!t.shopPurchase || t.shopKind || t.chargeBossId) return;
+      const label = (t.label || "").trim().toLowerCase();
+      for(const kind of kindsInOrder){
+        const name = shopKindName(kind).trim().toLowerCase();
+        if(name && label.startsWith(name)){
+          t.shopKind = kind;
+          changed = true;
+          return;
+        }
+      }
+      // Fall back to the built-in default names too, in case this shop
+      // was renamed after the purchase was logged.
+      if(/^stables?\b/.test(label)) { t.shopKind = "stable"; changed = true; }
+      else if(/^tavern\b/.test(label)) { t.shopKind = "tavern"; changed = true; }
+      else if(/^marketplace\b/.test(label)) { t.shopKind = "market"; changed = true; }
+    });
+    state.shopPurchaseKindMigratedV1 = true;
+    if(changed) save();
+  }
+  // Known-fix patch for one specific pre-existing record: the $275 "Apple
+  // Card payment" charged 2026-10-18 was a Marketplace trip, confirmed by
+  // the user -- there was no way to recover that from the data itself (see
+  // migrateShopPurchaseKindFlag above), so it's fixed by its own id here
+  // rather than guessed at for anyone else's rows.
+  function patchKnownApple275MarketplaceCharge(){
+    if(state.apple275MarketplacePatchedV1) return;
+    const t = state.transactions.find(x =>
+      x.id === "mvecz1kgdxx7k0" && x.chargeBossId && Number(x.amount) === 275);
+    if(t && !t.shopKind){
+      t.shopKind = "market";
+      save();
+    }
+    state.apple275MarketplacePatchedV1 = true;
+  }
   function getEnvelopeSpent(t){
     ensureCurrentStart();
     const rec = (state.envelopeSpent || {})[state.currentStartISO] || {};
@@ -5926,20 +5992,27 @@ var qrcode = function() {
       ? `<span class="acct-bar ${isAffirmTag(t.tags) ? "acct-bar-affirm" : "acct-bar-bank"}"></span>`
       : "";
     const shopEnvelope = isShopEnvelope(t);
+    // A purchase row logged from a Marketplace/Stables/Tavern trip (cash/
+    // debit or card-charged) carries which shop it came from -- show that
+    // shop's own icon here instead of the boss portrait, so you can tell
+    // at a glance which location a charge came from even when it's riding
+    // on a credit card. Takes priority over the boss-portrait lookup below.
+    const shopPurchaseKind = (!shopEnvelope && t.shopPurchase && t.shopKind) ? t.shopKind : null;
     // If this bill is linked to a Boss, its portrait rides next to the
     // name the same way the gold pouch does for a Shop Envelope -- a
     // visual tell of what kind of row this is before you even read it.
     const bossKey = t.seriesId || t.id;
-    const linkedBoss = !shopEnvelope
+    const linkedBoss = (!shopEnvelope && !shopPurchaseKind)
       ? (state.bosses.find(b => b.linkedKey && b.linkedKey === bossKey)
          || (t.chargeBossId ? state.bosses.find(b => b.id === t.chargeBossId) : null))
       : null;
     return `<div class="tx-row${menuOpen ? " menu-active" : ""}${shopEnvelope ? " tx-row-shop" : ""}" data-id="${t.id}">
       ${acctBarHTML}
       ${shopEnvelope ? ('<span class="shop-pouch-row-icon" title="' + escapeHtml(shopKindName(shopEnvelopeKind(t))) + '">' + shopKindIconSVG(shopEnvelopeKind(t)) + '</span>') : ""}
+      ${shopPurchaseKind ? ('<span class="shop-pouch-row-icon" title="' + escapeHtml(shopKindName(shopPurchaseKind)) + '">' + shopKindIconSVG(shopPurchaseKind) + '</span>') : ""}
       ${linkedBoss ? ('<span class="boss-portrait-row-icon" title="' + escapeHtml(linkedBoss.name || "Boss") + '">' + bossPortraitSVG(linkedBoss) + '</span>') : ""}
       <div class="tx-main">
-        <div class="tx-label ${amtClass}"><span class="tx-label-text${t.shopPurchase ? " gold" : ""}">${escapeHtml(t.label)}</span>${t.seriesId ? `<span class="repeat-badge" title="${REPEAT_LABELS[t.repeat]||"Repeating"}">${REPEAT_ICON}</span>` : ""}${(t.type === "transaction" && !t.chargeBossId) ? `<span class="txn-monster-badge" title="${escapeHtml(t.label || "Transaction")}">${monsterIconSVGForLabel(t.label)}</span>` : ""}</div>
+        <div class="tx-label ${amtClass}"><span class="tx-label-text${t.shopPurchase ? " gold" : ""}">${escapeHtml(t.label)}</span>${t.seriesId ? `<span class="repeat-badge" title="${REPEAT_LABELS[t.repeat]||"Repeating"}">${REPEAT_ICON}</span>` : ""}${(t.type === "transaction" && !t.chargeBossId && !shopPurchaseKind) ? `<span class="txn-monster-badge" title="${escapeHtml(t.label || "Transaction")}">${monsterIconSVGForLabel(t.label)}</span>` : ""}</div>
         ${(() => {
           // A Shop Envelope shows how much gold is left this period
           // instead of the usual tag/description line -- same idea as
@@ -6694,7 +6767,11 @@ var qrcode = function() {
             // trip (same yellow-label treatment as a straight gold buy),
             // even though this one's charged to a card rather than Cash/
             // Debit -- see the tx-label-text.gold rule and buildAccountActivity.
-            shopPurchase: true
+            shopPurchase: true,
+            // Which of the three shops this trip was -- lets the row show
+            // that shop's own icon instead of the boss portrait (see
+            // buildTxRowHTML's shopPurchaseKind handling).
+            shopKind: shopEnvelopeKind(t)
           });
         }
       }
@@ -6737,6 +6814,10 @@ var qrcode = function() {
         // same as a card-charged shop payment (see tx-label-text.gold and
         // buildAccountActivity's isGold).
         shopPurchase: true,
+        // Which of the three shops this trip was -- lets the row show
+        // that shop's own icon instead of a generic monster badge (see
+        // buildTxRowHTML's shopPurchaseKind handling).
+        shopKind: shopEnvelopeKind(t),
         repeat: "none",
         everyXDays: null,
         seriesId: null,
@@ -10850,6 +10931,9 @@ var qrcode = function() {
 
   ensureCurrentStart();
   migrateShopEnvelopeLabels();
+  migrateShopPurchaseGoldFlag();
+  migrateShopPurchaseKindFlag();
+  patchKnownApple275MarketplaceCharge();
   $("#shopPotionBottleIcon").innerHTML = shopPotionIconSVG();
   applyBossInterest();
   checkBossDefeatBadges(); // silent catch-up on load; no popup for pre-existing payoffs
