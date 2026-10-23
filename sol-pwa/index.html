@@ -5173,6 +5173,33 @@ var qrcode = function() {
     }
     state.apple275MarketplacePatchedV1 = true;
   }
+  // Same idea as the patch above, for three more pre-existing card-charged
+  // rows the user identified by amount/date: the user confirmed these by
+  // eye since there's nothing in the data itself to go on (see
+  // migrateShopPurchaseKindFlag). Matched by (chargeBossId present, no
+  // shopKind yet, exact date + amount) rather than by id, since these
+  // predate this conversation's id lookup -- each fix only ever claims
+  // the first still-unflagged match, so it can't double-apply.
+  function patchKnownShopKindFixes20261022(){
+    if(state.knownShopKindFixes20261022V1) return;
+    const fixes = [
+      { amount: 55.01, date: "2026-10-22", kind: "stable" },
+      { amount: 66,    date: "2026-10-22", kind: "stable" },
+      { amount: 20,    date: "2026-10-22", kind: "tavern" }
+    ];
+    let changed = false;
+    fixes.forEach(fix => {
+      const t = state.transactions.find(x =>
+        x.chargeBossId && !x.shopKind && x.date === fix.date &&
+        Math.abs(Number(x.amount) - fix.amount) < 0.005);
+      if(t){
+        t.shopKind = fix.kind;
+        changed = true;
+      }
+    });
+    state.knownShopKindFixes20261022V1 = true;
+    if(changed) save();
+  }
   function getEnvelopeSpent(t){
     ensureCurrentStart();
     const rec = (state.envelopeSpent || {})[state.currentStartISO] || {};
@@ -10934,6 +10961,7 @@ var qrcode = function() {
   migrateShopPurchaseGoldFlag();
   migrateShopPurchaseKindFlag();
   patchKnownApple275MarketplaceCharge();
+  patchKnownShopKindFixes20261022();
   $("#shopPotionBottleIcon").innerHTML = shopPotionIconSVG();
   applyBossInterest();
   checkBossDefeatBadges(); // silent catch-up on load; no popup for pre-existing payoffs
