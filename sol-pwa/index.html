@@ -856,9 +856,20 @@
     flex:0 0 100%;width:100%;
   }
   .shop-tile{
+    position:relative;
     flex:0 0 calc((100% - 12px)/3);min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;
     background:#141f18;border:1px solid #2a4a30;border-radius:10px;padding:7px 4px 6px;
     cursor:pointer;
+  }
+  /* Unpaid/total badge for the Guild Hall/Keep/Dungeon building tiles --
+     rides in the top-right corner instead of its own stacked line, so the
+     tile stays exactly the same size/shape as a gold envelope tile
+     (Marketplace/Stables/Tavern) and the money line underneath has room
+     to breathe. */
+  .shop-tile-badge-count{
+    position:absolute;top:4px;right:4px;font-size:9px;font-weight:800;line-height:1;
+    background:#000;color:#fff;border:1px solid #2a4a30;border-radius:8px;padding:2px 5px;
+    white-space:nowrap;
   }
   .shop-tile:active{background:#1b2a20;}
   /* Extra visual on top of the pulsing dot for a tile that's due in the
@@ -873,6 +884,12 @@
     border-top:2px solid var(--blue);border-bottom:none;
     border-radius:10px 10px 0 0;position:relative;z-index:1;
   }
+  /* Guild Hall/Keep/Dungeon sub-tile, not due this fortnight: blacked out
+     instead of the usual dark-green shop-tile background, so the ones
+     actually due (green outline) read as clearly distinct at a glance. */
+  .shop-tile.not-due-tile{background:#000;border-color:#1a1a1a;}
+  .shop-tile.not-due-tile:active{background:#0a0a0a;}
+  .shop-tile-count{font-size:10px;font-weight:600;color:var(--text-dim);text-align:center;white-space:nowrap;}
   .shop-tile-icon{width:28px;height:28px;flex:none;display:flex;align-items:center;justify-content:center;}
   .shop-tile-icon svg{width:100%;height:100%;display:block;shape-rendering:crispEdges;}
   .shop-tile-name{font-size:10px;font-weight:800;color:#f0c94d;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
@@ -5222,6 +5239,42 @@ var qrcode = function() {
     state.knownShopKindFixes20261022V1 = true;
     if(changed) save();
   }
+  // One-time self-heal for the stray-placeholder-next-to-a-real-occurrence
+  // bug: before clearStrayShopEnvelopePlaceholder existed, scrolling ahead
+  // into a future period before a shop envelope (Marketplace/Stables/
+  // Tavern) had its recurring series set up would auto-seed a $0
+  // placeholder bill there; once the real series was created, its
+  // generated occurrence landed right next to that stale placeholder
+  // instead of replacing it, so the period showed two of the same shop.
+  // Runs once across the WHOLE saved history (not just the four rows found
+  // by hand this session), so anyone who already has this collision gets
+  // it cleaned up automatically the next time the app loads, without
+  // needing to import a hand-patched backup.
+  function migrateStrayShopEnvelopePlaceholders(){
+    if(state.strayShopPlaceholdersMigratedV1) return;
+    const bills = state.transactions.filter(t => t.type === "bill" && isShopEnvelope(t));
+    const isPlaceholder = t => !t.seriesId && Number(t.amount) === 0;
+    const toRemove = new Set();
+    bills.forEach(t => {
+      if(isPlaceholder(t)) return; // only a REAL occurrence triggers removal
+      const kind = shopEnvelopeKind(t);
+      const d = toDateOnly(parseISO(t.date));
+      const start = periodStartContaining(d);
+      const end = periodEnd(start);
+      bills.forEach(o => {
+        if(o === t || toRemove.has(o.id) || !isPlaceholder(o)) return;
+        if(shopEnvelopeKind(o) !== kind) return;
+        const od = toDateOnly(parseISO(o.date));
+        if(od < start || od > end) return;
+        toRemove.add(o.id);
+      });
+    });
+    if(toRemove.size){
+      state.transactions = state.transactions.filter(t => !toRemove.has(t.id));
+    }
+    state.strayShopPlaceholdersMigratedV1 = true;
+    if(toRemove.size) save();
+  }
   function getEnvelopeSpent(t){
     ensureCurrentStart();
     const rec = (state.envelopeSpent || {})[state.currentStartISO] || {};
@@ -5795,7 +5848,9 @@ var qrcode = function() {
       // bars), not what's already paid -- $200 left of $1,166 should read
       // as a mostly-empty bar, not a nearly-full one.
       const guildPct = guildTotal > 0 ? Math.max(0, Math.min(100, (guildRemaining / guildTotal) * 100)) : 0;
+      const guildUnpaidCount = guildDue.filter(t => t.status !== "paid").length;
       guildTile = `<div class="shop-tile guild-hall-tile" data-guild-hall-open="1">
+        <span class="shop-tile-badge-count">${guildUnpaidCount} of ${guildDue.length}</span>
         <span class="shop-tile-icon">${guildHallIconSVG()}</span>
         <div class="shop-tile-name">Guild Hall</div>
         <div class="shop-tile-gold">${fmtMoney(guildRemaining)} of ${fmtMoney(guildTotal)}</div>
@@ -5809,7 +5864,9 @@ var qrcode = function() {
       const keepTotal = keepDue.reduce((s,t) => s + effectiveAmount(t), 0);
       const keepRemaining = keepDue.filter(t => t.status !== "paid").reduce((s,t) => s + effectiveAmount(t), 0);
       const keepPct = keepTotal > 0 ? Math.max(0, Math.min(100, (keepRemaining / keepTotal) * 100)) : 0;
+      const keepUnpaidCount = keepDue.filter(t => t.status !== "paid").length;
       keepTile = `<div class="shop-tile keep-tile" data-keep-open="1">
+        <span class="shop-tile-badge-count">${keepUnpaidCount} of ${keepDue.length}</span>
         <span class="shop-tile-icon">${keepIconSVG()}</span>
         <div class="shop-tile-name">The Keep</div>
         <div class="shop-tile-gold">${fmtMoney(keepRemaining)} of ${fmtMoney(keepTotal)}</div>
@@ -5825,7 +5882,9 @@ var qrcode = function() {
       const dungeonTotal = dungeonDue.reduce((s,e) => s + effectiveAmount(e.t), 0);
       const dungeonRemaining = dungeonDue.filter(e => e.t.status !== "paid").reduce((s,e) => s + effectiveAmount(e.t), 0);
       const dungeonPct = dungeonTotal > 0 ? Math.max(0, Math.min(100, (dungeonRemaining / dungeonTotal) * 100)) : 0;
+      const dungeonUnpaidCount = dungeonDue.filter(e => e.t.status !== "paid").length;
       dungeonTile = `<div class="shop-tile dungeon-tile" data-dungeon-open="1">
+        <span class="shop-tile-badge-count">${dungeonUnpaidCount} of ${dungeonDue.length}</span>
         <span class="shop-tile-icon">${dungeonIconSVG()}</span>
         <div class="shop-tile-name">Boss Dungeon</div>
         <div class="shop-tile-gold">${fmtMoney(dungeonRemaining)} of ${fmtMoney(dungeonTotal)}</div>
@@ -5882,12 +5941,15 @@ var qrcode = function() {
       if(menuOpen) return buildTxRowHTML(t, today);
       const inPeriod = isDueThisView(t);
       // The green square outline is the only in-period highlight now --
-      // no more pulsing dots flanking the name.
-      return `<div class="shop-tile${inPeriod ? " current-fortnight-tile" : ""}" data-guild-sub-id="${t.id}">
+      // no more pulsing dots flanking the name. A tile NOT due this
+      // fortnight goes blacked-out instead and drops its progress bar
+      // entirely -- the bar only means something for what's actually due
+      // right now, so showing it on everything just buried that signal.
+      return `<div class="shop-tile${inPeriod ? " current-fortnight-tile" : " not-due-tile"}" data-guild-sub-id="${t.id}">
         <div class="shop-tile-name shop-tile-name-lg">${escapeHtml(t.label)}</div>
         <div class="shop-tile-due">${fmtDate(parseISO(t.date), state.settings.dateFormat)}</div>
         <div class="shop-tile-gold">${fmtMoney(effectiveAmount(t))}</div>
-        <div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${statusPct(t)}%;background:${guildStatusColor(t)};"></div></div>
+        ${inPeriod ? `<div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${statusPct(t)}%;background:${guildStatusColor(t)};"></div></div>` : ""}
       </div>`;
     }).join("");
     return `${bar}<div class="shop-tile-row">${tiles}</div>`;
@@ -5922,11 +5984,11 @@ var qrcode = function() {
       const menuOpen = t.id === openStatusPickerId || t.id === openActionMenuId;
       if(menuOpen) return buildTxRowHTML(t, today);
       const inPeriod = isDueThisView(t);
-      return `<div class="shop-tile${inPeriod ? " current-fortnight-tile" : ""}" data-keep-sub-id="${t.id}">
+      return `<div class="shop-tile${inPeriod ? " current-fortnight-tile" : " not-due-tile"}" data-keep-sub-id="${t.id}">
         <div class="shop-tile-name shop-tile-name-lg">${escapeHtml(t.label)}</div>
         <div class="shop-tile-due">${fmtDate(parseISO(t.date), state.settings.dateFormat)}</div>
         <div class="shop-tile-gold">${fmtMoney(effectiveAmount(t))}</div>
-        <div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${statusPct(t)}%;background:${guildStatusColor(t)};"></div></div>
+        ${inPeriod ? `<div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${statusPct(t)}%;background:${guildStatusColor(t)};"></div></div>` : ""}
       </div>`;
     }).join("");
     return `${bar}<div class="shop-tile-row">${tiles}</div>`;
@@ -5972,12 +6034,12 @@ var qrcode = function() {
       const inPeriod = isDueThisView(e);
       const starting = Number(boss.startingBalance || 0);
       const hpPct = starting > 0 ? Math.max(0, Math.min(100, (Number(boss.balance || 0) / starting) * 100)) : 0;
-      return `<div class="shop-tile${inPeriod ? " current-fortnight-tile" : ""}" data-dungeon-sub-id="${t.id}">
+      return `<div class="shop-tile${inPeriod ? " current-fortnight-tile" : " not-due-tile"}" data-dungeon-sub-id="${t.id}">
         <span class="shop-tile-icon dungeon-sub-icon">${bossPortraitSVG(boss)}</span>
         <div class="shop-tile-name shop-tile-name-lg">${escapeHtml(boss.name || "Unnamed")}</div>
         <div class="shop-tile-due">${fmtDate(parseISO(t.date), state.settings.dateFormat)}</div>
         <div class="shop-tile-gold">${fmtMoney(effectiveAmount(t))}</div>
-        <div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${hpPct}%;background:var(--coral);"></div></div>
+        ${inPeriod ? `<div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${hpPct}%;background:var(--coral);"></div></div>` : ""}
       </div>`;
     }).join("");
     return `${bar}<div class="shop-tile-row">${tiles}</div>`;
@@ -10988,6 +11050,7 @@ var qrcode = function() {
   migrateShopPurchaseKindFlag();
   patchKnownApple275MarketplaceCharge();
   patchKnownShopKindFixes20261022();
+  migrateStrayShopEnvelopePlaceholders();
   $("#shopPotionBottleIcon").innerHTML = shopPotionIconSVG();
   applyBossInterest();
   checkBossDefeatBadges(); // silent catch-up on load; no popup for pre-existing payoffs
