@@ -411,6 +411,7 @@
      amount column -- the repeat/monster badges stay full-size and visible
      next to it instead of being pushed off or overlapped. */
   .tx-label-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+  .tx-label-text.gold{color:#f0c94d;}
   .repeat-badge{color:var(--text-faint);flex:none;}
   .txn-badge{
     display:inline-block;margin-left:6px;font-size:9px;font-weight:800;letter-spacing:.03em;
@@ -451,7 +452,9 @@
   }
   .tx-date{font-size:14px;font-weight:700;color:#ffffff;white-space:nowrap;width:78px;text-align:center;flex:none;margin-left:12px;}
   .tx-date.date-past{color:var(--text-dim);}
-  .tx-amt{width:80px;text-align:right;font-weight:800;font-size:16px;flex:none;margin-right:12px;}
+  .tx-amt-wrap{display:flex;flex-direction:column;align-items:flex-end;flex:none;margin-right:12px;}
+  .tx-amt{width:80px;text-align:right;font-weight:800;font-size:16px;flex:none;}
+  .tx-bal-after{font-size:10px;font-weight:600;color:var(--text-dim);margin-top:1px;white-space:nowrap;}
   .tx-amt.unpaid-upcoming{color:#ffffff;}
   .tx-amt.unpaid-overdue{color:var(--coral);}
   .tx-amt.pending-orange{color:var(--pending-orange);}
@@ -560,6 +563,28 @@
   .tag-period-label{flex:1;text-align:center;font-weight:800;font-size:15px;color:var(--blue);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   #tagPeriodPrevBtn, #tagPeriodNextBtn{background:#4a7a53;}
   #tagPeriodLabel{color:#4a7a53;}
+  .activity-acct-toggle{display:flex;gap:6px;margin-bottom:10px;}
+  .activity-acct-btn{
+    flex:1;font:inherit;font-size:12px;font-weight:800;letter-spacing:.02em;
+    padding:7px 6px;border-radius:8px;border:1px solid var(--border);
+    background:var(--bg);color:var(--text-dim);cursor:pointer;-webkit-tap-highlight-color:transparent;
+  }
+  .activity-acct-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+  .activity-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
+    background:var(--bg);border:1px solid var(--border);border-radius:10px;
+    padding:10px 14px;margin-bottom:8px;
+  }
+  .activity-row:last-child{margin-bottom:0;}
+  .activity-row-main{min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .activity-row-label{font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .activity-row-label.gold{color:#f0c94d;}
+  .activity-row-date{font-size:11px;font-weight:600;color:var(--text-faint);}
+  .activity-row-side{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+  .activity-row-amt{font-size:15px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--coral);}
+  .activity-row-amt.income{color:var(--teal);}
+  .activity-row-bal{font-size:11px;font-weight:600;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
+  .activity-row-rem{font-size:11px;font-weight:600;color:var(--green);font-family:'JetBrains Mono',monospace;}
   #calPrevBtn, #calNextBtn{background:#4a7a53;}
   #calMonthLabel{color:#4a7a53;}
   .arrow-btn.small{width:28px;height:28px;flex:none;}
@@ -1702,6 +1727,14 @@
       </div>
       <div class="section-label">Weekly Transactions</div>
       <div class="reserve-panel" id="weeklyTxnPanel"></div>
+      <div class="section-label">Account Activity</div>
+      <div class="reserve-panel">
+        <div class="activity-acct-toggle" id="activityAcctToggle" style="display:none;">
+          <button type="button" class="activity-acct-btn active" id="activityAcctBankBtn">Account 1</button>
+          <button type="button" class="activity-acct-btn" id="activityAcctAffirmBtn">Account 2</button>
+        </div>
+        <div id="activityPanel"></div>
+      </div>
       <div class="section-label">Bills By Tag</div>
       <div class="reserve-panel" id="tagTotalsPanel"></div>
       <div class="reserve-panel">
@@ -5507,6 +5540,53 @@ var qrcode = function() {
 
   let openStatusPickerId = null;
   let openActionMenuId = null;
+  // Running balance per row -- rebuilt once at the top of every list
+  // render (see buildTxListHTML) and read by buildTxRowHTML. Keyed by
+  // transaction id; bank and Affirm get their own reconstructed series
+  // since each account's balance only moves for its own transactions.
+  let runningBalances = { bank: new Map(), affirm: new Map() };
+
+  // Reconstructs what each account's balance was immediately after every
+  // transaction that's actually hit it (paid, or pending-and-deducted --
+  // same "already applied" test used everywhere else in this file), for
+  // whichever period/range is currently on screen. Addition/subtraction is
+  // commutative, so working backward from today's real balance by the net
+  // effect of everything already applied, then replaying forward in date
+  // order, lands on the exact real balance at the end regardless of what
+  // order things actually happened in -- a normal bank-statement running
+  // balance, not a guess. Only meaningful in single-period view (Safe to
+  // Spend's stored balances are keyed to state.currentStartISO), so other
+  // view modes just get empty maps and no balance column shows.
+  function computeRunningBalances(){
+    const empty = { bank: new Map(), affirm: new Map() };
+    if(state.viewMode !== "1") return empty;
+    const { start, end } = displayRange();
+    const inRange = state.transactions.filter(t => {
+      const d = toDateOnly(parseISO(t.date));
+      return d >= start && d <= end;
+    });
+    const buildFor = (wantAffirm, currentBal) => {
+      const map = new Map();
+      if(currentBal === null || currentBal === undefined) return map;
+      const applied = inRange.filter(t => isAffirmTag(t.tags) === wantAffirm &&
+        (t.type === "income" || t.status === "paid" || (t.status === "pending" && t.deducted)));
+      const effect = t => t.type === "income" ? Number(t.amount || 0) : -Number(t.amount || 0);
+      const netApplied = applied.reduce((s, t) => s + effect(t), 0);
+      let running = round2(Number(currentBal) - netApplied);
+      applied
+        .slice()
+        .sort((a, b) => {
+          const d = toDateOnly(parseISO(a.date)) - toDateOnly(parseISO(b.date));
+          return d !== 0 ? d : String(a.id).localeCompare(String(b.id));
+        })
+        .forEach(t => {
+          running = round2(running + effect(t));
+          map.set(t.id, running);
+        });
+      return map;
+    };
+    return { bank: buildFor(false, getBankBalance()), affirm: buildFor(true, getAffirmBalance()) };
+  }
   // Guild Hall doesn't pop up a separate screen -- tapping its tile swaps
   // what the transaction list itself shows (subscriptions instead of
   // bills), while the HP bar, account balances, date bar and every other
@@ -5789,6 +5869,7 @@ var qrcode = function() {
   }
 
   function buildTxListHTML(){
+    runningBalances = computeRunningBalances();
     const { start: txListViewStart, end: txListViewEnd } = displayRange();
     if(guildHallViewActive){
       const bills = guildHallCurrentBills(txListViewStart, txListViewEnd);
@@ -5858,7 +5939,7 @@ var qrcode = function() {
       ${shopEnvelope ? ('<span class="shop-pouch-row-icon" title="' + escapeHtml(shopKindName(shopEnvelopeKind(t))) + '">' + shopKindIconSVG(shopEnvelopeKind(t)) + '</span>') : ""}
       ${linkedBoss ? ('<span class="boss-portrait-row-icon" title="' + escapeHtml(linkedBoss.name || "Boss") + '">' + bossPortraitSVG(linkedBoss) + '</span>') : ""}
       <div class="tx-main">
-        <div class="tx-label ${amtClass}"><span class="tx-label-text">${escapeHtml(t.label)}</span>${t.seriesId ? `<span class="repeat-badge" title="${REPEAT_LABELS[t.repeat]||"Repeating"}">${REPEAT_ICON}</span>` : ""}${(t.type === "transaction" && !t.chargeBossId) ? `<span class="txn-monster-badge" title="${escapeHtml(t.label || "Transaction")}">${monsterIconSVGForLabel(t.label)}</span>` : ""}</div>
+        <div class="tx-label ${amtClass}"><span class="tx-label-text${t.shopPurchase ? " gold" : ""}">${escapeHtml(t.label)}</span>${t.seriesId ? `<span class="repeat-badge" title="${REPEAT_LABELS[t.repeat]||"Repeating"}">${REPEAT_ICON}</span>` : ""}${(t.type === "transaction" && !t.chargeBossId) ? `<span class="txn-monster-badge" title="${escapeHtml(t.label || "Transaction")}">${monsterIconSVGForLabel(t.label)}</span>` : ""}</div>
         ${(() => {
           // A Shop Envelope shows how much gold is left this period
           // instead of the usual tag/description line -- same idea as
@@ -5900,7 +5981,19 @@ var qrcode = function() {
           ].filter(Boolean).join(' ')}</div>` : "";
         })()}
       </div>
-      <div class="tx-amt amt ${amtClass}">${shopEnvelope ? fmtMoney(getEnvelopeRemaining(t)) : fmtMoney(t.amount)}</div>
+      <div class="tx-amt-wrap">
+        <div class="tx-amt amt ${amtClass}">${shopEnvelope ? fmtMoney(getEnvelopeRemaining(t)) : fmtMoney(t.amount)}</div>
+        ${(() => {
+          // Running balance -- what that account actually stood at right
+          // after this one posted. Only ever set for a row that's really
+          // hit the balance (paid, or pending-and-deducted); everything
+          // else still just shows the dollar amount above with nothing
+          // underneath, same as it always has.
+          const acctMap = isAffirmTag(t.tags) ? runningBalances.affirm : runningBalances.bank;
+          const balAfter = acctMap.get(t.id);
+          return balAfter !== undefined ? `<div class="tx-bal-after">${fmtMoney(balAfter)}</div>` : "";
+        })()}
+      </div>
       <div class="tx-status-zone">
         <button class="status-btn ${statusClass}" data-status-id="${t.id}" aria-label="Toggle status">${statusIcon(t.status, t.deducted)}</button>
         <div class="tx-date ${toDateOnly(parseISO(t.date)) <= today ? "date-past" : ""}">${fmtDate(parseISO(t.date), state.settings.dateFormat)}</div>
@@ -6446,25 +6539,39 @@ var qrcode = function() {
   }
   // Rebuilds the "Paid with" dropdown from the current boss list each time
   // the Teller opens (a boss could've been added/renamed/deleted since
-  // last time), and resets it back to Cash/Debit -- the default, unchanged
-  // behavior -- so a boss choice never carries over from a previous visit.
-  // Also relabels the "From account" toggle buttons from the two real
-  // accounts (names follow Settings, same as everywhere else).
+  // last time). Defaults the selection itself to Apple Card when one
+  // exists (falls back to Cash/Debit otherwise) -- so a boss choice never
+  // carries over from a previous visit, it just starts on Apple Card
+  // instead of Cash/Debit every time. Also relabels the "From account"
+  // toggle buttons from the two real accounts (names follow Settings,
+  // same as everywhere else).
   function populateShopPaidWithSelect(){
     const sel = $("#shopPaidWithSelect");
     if(!sel) return;
-    const bossOptions = (state.bosses || [])
+    // Apple Card goes first in the list (ahead of Cash/Debit) since that's
+    // the one actually reached for most -- only reorders this dropdown,
+    // not the real boss list used anywhere else (Bosses screen, etc.).
+    const bosses = (state.bosses || []).slice();
+    const appleIdx = bosses.findIndex(b => (b.name || "").trim().toLowerCase() === "apple card");
+    let appleFirstOption = "", appleId = "";
+    if(appleIdx !== -1){
+      const [apple] = bosses.splice(appleIdx, 1);
+      appleId = apple.id;
+      appleFirstOption = `<option value="${apple.id}">${escapeHtml(apple.name || "Unnamed")}</option>`;
+    }
+    const bossOptions = bosses
       .map(b => `<option value="${b.id}">${escapeHtml(b.name || "Unnamed")}</option>`).join("");
-    sel.innerHTML = '<option value="">Cash / Debit</option>' + bossOptions;
-    sel.value = "";
-    $("#shopCardChargeRow").style.display = "none";
+    sel.innerHTML = appleFirstOption + '<option value="">Cash / Debit</option>' + bossOptions;
+    sel.value = appleId;
     const btn1 = $("#shopPaidFromAcctBtn1"), btn2 = $("#shopPaidFromAcctBtn2");
     if(btn1 && btn2){
       btn1.textContent = account1Name();
       btn2.textContent = account2Name();
       btn2.style.display = accountCount() === 2 ? "" : "none";
-      setShopPaidFromAccount(false);
     }
+    // Same reveal/account-toggle logic the change handler runs, so landing
+    // on Apple Card by default behaves exactly like picking it by hand.
+    sel.dispatchEvent(new Event("change"));
   }
   // Which real account a boss's OWN linked recurring bill is already
   // tagged to -- used only to pick a sensible starting point for the
@@ -6509,6 +6616,8 @@ var qrcode = function() {
     if(isCard){
       const boss = state.bosses.find(b => b.id === bossId);
       setShopPaidFromAccount(bossDefaultIsAccount2(boss));
+    } else {
+      setShopPaidFromAccount(false);
     }
   });
 
@@ -6580,7 +6689,12 @@ var qrcode = function() {
             // for that), but still ties this one-off payment to the boss
             // it's paying down, so its row can show that boss's own
             // portrait icon instead of a random monster badge.
-            chargeBossId: boss.id
+            chargeBossId: boss.id,
+            // Marks it as having come out of a Marketplace/Stables/Tavern
+            // trip (same yellow-label treatment as a straight gold buy),
+            // even though this one's charged to a card rather than Cash/
+            // Debit -- see the tx-label-text.gold rule and buildAccountActivity.
+            shopPurchase: true
           });
         }
       }
@@ -6614,6 +6728,15 @@ var qrcode = function() {
         description: "",
         status: "paid",
         type: "transaction",
+        // Born already paid -- it was never sitting in Outstanding the way
+        // a bill is before you pay it, so Account Activity's Remaining
+        // column needs to know to drop it by the full amount (same as
+        // Balance) instead of treating it as a wash like a bill paid off.
+        neverOutstanding: true,
+        // Came out of a Marketplace/Stables/Tavern trip -- yellow label,
+        // same as a card-charged shop payment (see tx-label-text.gold and
+        // buildAccountActivity's isGold).
+        shopPurchase: true,
         repeat: "none",
         everyXDays: null,
         seriesId: null,
@@ -10057,6 +10180,133 @@ var qrcode = function() {
   }
 
   let tagPeriodOffset = 0;
+  let activityAcct = "bank";
+
+  // A real history page: every paid bill, paid shop purchase and income
+  // entry for whichever period the Overview tag-nav is on, newest first,
+  // each with the balance that account actually stood at right after --
+  // same reconstruction computeRunningBalances uses for the main list
+  // (balances are commutative, so replaying the already-applied activity
+  // forward from today's/that period's stored balance lands exactly where
+  // it really ended up, regardless of the order things were marked paid
+  // in). Unlike the main list this also surfaces Income, which normally
+  // only shows in its own Overview panel.
+  function buildAccountActivity(start, end){
+    const inRange = state.transactions.filter(t => {
+      const d = toDateOnly(parseISO(t.date));
+      return d >= start && d <= end;
+    });
+    const startISO = fmtISO(start);
+    const isLivePeriod = state.currentStartISO === startISO;
+    const storedBank = state.bankBalances[startISO];
+    const storedAffirm = state.affirmBalances[startISO];
+    const bankCur = isLivePeriod ? getBankBalance() : (storedBank === undefined ? null : storedBank);
+    const affirmCur = isLivePeriod ? getAffirmBalance() : (storedAffirm === undefined ? null : storedAffirm);
+
+    // Same Outstanding renderFooter uses for "X REMAINING" -- this period's
+    // own unpaid/pending-not-deducted total, plus any earlier backlog when
+    // this is the real current period. Deliberately leaves out the
+    // Alchemist test-mode siphon (carryoverGoal): that's a live what-if
+    // toggle, not a fact about what actually happened.
+    const today = toDateOnly(new Date());
+    const isLiveRange = start <= today && today <= end;
+    const isOutstandingTest = t => t.status === "unpaid" || (t.status === "pending" && !t.deducted);
+    const overdueAndCurrent = isLiveRange
+      ? state.transactions.filter(t => toDateOnly(parseISO(t.date)) <= end)
+      : inRange;
+    const outstandingCandidates = overdueAndCurrent.filter(t => t.type === "bill" || t.type === "transaction");
+    const outstandingFor = wantAffirm => outstandingCandidates
+      .filter(t => isAffirmTag(t.tags) === wantAffirm)
+      .filter(isOutstandingTest)
+      .reduce((s, t) => s + effectiveAmount(t), 0);
+
+    const buildFor = (wantAffirm, currentBal) => {
+      if(currentBal === null || currentBal === undefined) return [];
+      const currentRemaining = round2(Number(currentBal) - outstandingFor(wantAffirm));
+      const applied = inRange.filter(t => isAffirmTag(t.tags) === wantAffirm &&
+        (t.type === "income" || t.status === "paid" || (t.status === "pending" && t.deducted)));
+      const effectBal = t => t.type === "income" ? Number(t.amount || 0) : -Number(t.amount || 0);
+      // Paying off a real bill pulls the same amount out of Outstanding at
+      // the same moment it leaves Balance, so Remaining is a wash for
+      // those -- it only actually moves for income, and for something
+      // (like a shop purchase) that was never sitting in Outstanding to
+      // begin with.
+      const effectRem = t => (t.type === "income" || t.neverOutstanding) ? effectBal(t) : 0;
+      const netBal = applied.reduce((s, t) => s + effectBal(t), 0);
+      const netRem = applied.reduce((s, t) => s + effectRem(t), 0);
+      let runningBal = round2(Number(currentBal) - netBal);
+      let runningRem = round2(currentRemaining - netRem);
+      const rows = applied
+        .slice()
+        .sort((a, b) => {
+          const d = toDateOnly(parseISO(a.date)) - toDateOnly(parseISO(b.date));
+          return d !== 0 ? d : String(a.id).localeCompare(String(b.id));
+        })
+        .map(t => {
+          runningBal = round2(runningBal + effectBal(t));
+          runningRem = round2(runningRem + effectRem(t));
+          return {
+            id: t.id,
+            date: t.date,
+            label: t.label || (t.type === "income" ? "Income" : "Transaction"),
+            isIncome: t.type === "income",
+            // Paid with gold at the Marketplace/Stables/Tavern -- the same
+            // flag that tells Remaining not to treat it as a wash doubles
+            // as the "this came out of gold" marker here.
+            isGold: !!t.shopPurchase,
+            amount: Number(t.amount || 0),
+            balanceAfter: runningBal,
+            remainingAfter: runningRem
+          };
+        });
+      rows.reverse(); // newest first
+      return rows;
+    };
+
+    return { bank: buildFor(false, bankCur), affirm: buildFor(true, affirmCur) };
+  }
+
+  function renderAccountActivity(start, end){
+    const data = buildAccountActivity(start, end);
+    const twoAccts = accountCount() === 2;
+    const toggle = $("#activityAcctToggle");
+    toggle.style.display = twoAccts ? "flex" : "none";
+    $("#activityAcctBankBtn").textContent = account1Name();
+    $("#activityAcctAffirmBtn").textContent = account2Name();
+    const useAffirm = twoAccts && activityAcct === "affirm";
+    $("#activityAcctBankBtn").classList.toggle("active", !useAffirm);
+    $("#activityAcctAffirmBtn").classList.toggle("active", useAffirm);
+    const rows = useAffirm ? data.affirm : data.bank;
+    const panel = $("#activityPanel");
+    if(!rows.length){
+      panel.innerHTML = '<div class="tag-manage-empty">No balance-affecting activity this ' + periodNoun() + '.</div>';
+      return;
+    }
+    panel.innerHTML = rows.map(r => `
+      <div class="activity-row">
+        <div class="activity-row-main">
+          <span class="activity-row-label${r.isGold ? " gold" : ""}">${escapeHtml(r.label)}</span>
+          <span class="activity-row-date">${escapeHtml(fmtDate(parseISO(r.date), state.settings.dateFormat))}</span>
+        </div>
+        <div class="activity-row-side">
+          <span class="activity-row-amt${r.isIncome ? " income" : ""}">${r.isIncome ? "+" : "-"}${fmtMoney(r.amount)}</span>
+          <span class="activity-row-bal">Bal ${fmtMoney(r.balanceAfter)}</span>
+          <span class="activity-row-rem">Rem ${fmtMoney(r.remainingAfter)}</span>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  $("#activityAcctBankBtn").addEventListener("click", () => {
+    if(activityAcct === "bank") return;
+    activityAcct = "bank";
+    renderTagTotals();
+  });
+  $("#activityAcctAffirmBtn").addEventListener("click", () => {
+    if(activityAcct === "affirm") return;
+    activityAcct = "affirm";
+    renderTagTotals();
+  });
 
   function renderTagTotals(){
     const panel = $("#tagTotalsPanel");
@@ -10077,6 +10327,7 @@ var qrcode = function() {
     renderReserveStatsNote(statRows, start);
     renderWeeklyTxnSummary(start);
     renderIncomePanel(start, end);
+    renderAccountActivity(start, end);
   }
 
   function renderReserveProjectionList(){
