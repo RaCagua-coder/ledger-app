@@ -5083,6 +5083,28 @@ var qrcode = function() {
     });
     if(added) save();
   }
+  // If a real occurrence (a freshly added bill, or a new recurring series
+  // occurrence) just landed in the same period as one of the $0 staple
+  // placeholders ensureStapleEnvelopes seeds above, the placeholder's job
+  // is done -- drop it so the period doesn't end up showing two "Tavern"
+  // rows (one real, one an empty stand-in). Only ever removes a bill that
+  // still looks exactly like an unedited placeholder: no series, no money
+  // on it, same shop kind, same pay period as the real occurrence.
+  function clearStrayShopEnvelopePlaceholder(kind, occurrenceDateISO, skipId){
+    const d = toDateOnly(parseISO(occurrenceDateISO));
+    const start = periodStartContaining(d);
+    const end = periodEnd(start);
+    const before = state.transactions.length;
+    state.transactions = state.transactions.filter(t => {
+      if(t.id === skipId) return true;
+      if(t.type !== "bill" || t.seriesId || Number(t.amount) !== 0) return true;
+      if(!isShopEnvelope(t) || shopEnvelopeKind(t) !== kind) return true;
+      const td = toDateOnly(parseISO(t.date));
+      if(td < start || td > end) return true;
+      return false;
+    });
+    return state.transactions.length !== before;
+  }
 
   // One-time migration: Ra's existing bills say "Gas" and "Eating Out" --
   // now that "Stables" and "Tavern" are the real location names (and are
@@ -6083,16 +6105,6 @@ var qrcode = function() {
       </div>
       <div class="tx-amt-wrap">
         <div class="tx-amt amt ${amtClass}">${shopEnvelope ? fmtMoney(getEnvelopeRemaining(t)) : fmtMoney(t.amount)}</div>
-        ${(() => {
-          // Running balance -- what that account actually stood at right
-          // after this one posted. Only ever set for a row that's really
-          // hit the balance (paid, or pending-and-deducted); everything
-          // else still just shows the dollar amount above with nothing
-          // underneath, same as it always has.
-          const acctMap = isAffirmTag(t.tags) ? runningBalances.affirm : runningBalances.bank;
-          const balAfter = acctMap.get(t.id);
-          return balAfter !== undefined ? `<div class="tx-bal-after">${fmtMoney(balAfter)}</div>` : "";
-        })()}
       </div>
       <div class="tx-status-zone">
         <button class="status-btn ${statusClass}" data-status-id="${t.id}" aria-label="Toggle status">${statusIcon(t.status, t.deducted)}</button>
@@ -8551,6 +8563,10 @@ var qrcode = function() {
         const occurrences = generateSeriesOccurrences({ label, amount, date, description, status, type: editingType, repeatKey, everyXDays, tags, url });
         if(editingType === "income") occurrences.forEach(o => { o.status = "paid"; });
         state.transactions.push(...occurrences);
+        if(editingType === "bill" && isShopEnvelope(occurrences[0])){
+          const kind = shopEnvelopeKind(occurrences[0]);
+          occurrences.forEach(o => clearStrayShopEnvelopePlaceholder(kind, o.date, o.id));
+        }
         // Only the occurrence landing on the date just entered is the one
         // that actually bumped the balance/Max HP -- that's the one that
         // needs to remember which period it bumped, so deleting/editing it
@@ -8560,6 +8576,9 @@ var qrcode = function() {
         const newTx = { id: uid(), label, amount, date, description, status, type: editingType, repeat:"none", everyXDays:null, seriesId:null, tags, deducted:false, url };
         state.transactions.push(newTx);
         if(editingType === "income") newlyAddedIncomeTx = newTx;
+        if(editingType === "bill" && isShopEnvelope(newTx)){
+          clearStrayShopEnvelopePlaceholder(shopEnvelopeKind(newTx), newTx.date, newTx.id);
+        }
       }
       if(editingType === "income"){
         // Income lands immediately -- add it straight to this period's
@@ -8650,13 +8669,16 @@ var qrcode = function() {
           const next = nextDateFor(repeatKey, cur, everyXDays);
           if(!next || next > horizon) break;
           cur = next;
+          const occId = uid();
           state.transactions.push({
-            id: uid(), seriesId, label: t.label, amount: t.amount, date: fmtISO(cur),
+            id: occId, seriesId, label: t.label, amount: t.amount, date: fmtISO(cur),
             description: t.description, status: defaultStatusFor(t.type),
             type: t.type, repeat: repeatKey, everyXDays, tags: (t.tags||[]).slice(), deducted:false, url: t.url || null
           });
+          if(isShopEnvelope(t)) clearStrayShopEnvelopePlaceholder(shopEnvelopeKind(t), fmtISO(cur), occId);
           count++;
         }
+        if(isShopEnvelope(t)) clearStrayShopEnvelopePlaceholder(shopEnvelopeKind(t), t.date, t.id);
       }
     } else if(txSheetMode === "editSeries"){
       const t = state.transactions.find(x => x.id === editingId);
@@ -8695,6 +8717,10 @@ var qrcode = function() {
           }
         }
         state.transactions = keepPast.concat(rebuilt);
+        if(isShopEnvelope(t)){
+          const kind = shopEnvelopeKind(t);
+          rebuilt.forEach(o => clearStrayShopEnvelopePlaceholder(kind, o.date, o.id));
+        }
       } else {
         state.transactions.forEach(x => {
           if(x.seriesId === seriesId && x.date >= oldDate){
