@@ -4967,6 +4967,19 @@ var qrcode = function() {
     if(t.status === "pending") return t.deducted ? "var(--pending-yellow)" : "var(--pending-orange)";
     return "var(--text-dim)";
   }
+  // Sort priority for a due-this-period tile in Guild Hall/Keep/Dungeon:
+  // unpaid (coral) first, pending-not-yet-deducted (orange) next, pending-
+  // deducted (yellow) after that, paid (green) last -- so the ones that
+  // still need attention lead the row and a tile drifts to the back of its
+  // group the moment it's marked paid, same shape as the status color bar
+  // itself (coral -> orange -> yellow -> green).
+  function dueTileStatusRank(t){
+    if(t.status === "unpaid") return 0;
+    if(t.status === "pending" && !t.deducted) return 1;
+    if(t.status === "pending" && t.deducted) return 2;
+    if(t.status === "paid") return 3;
+    return 4;
+  }
   // Shared by all three rosters below: out of one series' stored occurrences
   // (a bill repeats "monthly" etc. by having one row generated per cycle,
   // up to ~2 years out), picks the single one that represents "this
@@ -5918,6 +5931,10 @@ var qrcode = function() {
       const aCur = isDueThisView(a) ? 0 : 1;
       const bCur = isDueThisView(b) ? 0 : 1;
       if(aCur !== bCur) return aCur - bCur;
+      if(aCur === 0){
+        const r = dueTileStatusRank(a) - dueTileStatusRank(b);
+        if(r !== 0) return r;
+      }
       return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0);
     });
     const barIcon = `<span class="building-bar-icon">${guildHallIconSVG()}</span>`;
@@ -5971,6 +5988,10 @@ var qrcode = function() {
       const aCur = isDueThisView(a) ? 0 : 1;
       const bCur = isDueThisView(b) ? 0 : 1;
       if(aCur !== bCur) return aCur - bCur;
+      if(aCur === 0){
+        const r = dueTileStatusRank(a) - dueTileStatusRank(b);
+        if(r !== 0) return r;
+      }
       return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0);
     });
     const barIcon = `<span class="building-bar-icon">${keepIconSVG()}</span>`;
@@ -6013,6 +6034,10 @@ var qrcode = function() {
       const aCur = isDueThisView(a) ? 0 : 1;
       const bCur = isDueThisView(b) ? 0 : 1;
       if(aCur !== bCur) return aCur - bCur;
+      if(aCur === 0){
+        const r = dueTileStatusRank(a.t) - dueTileStatusRank(b.t);
+        if(r !== 0) return r;
+      }
       return a.t.date < b.t.date ? -1 : (a.t.date > b.t.date ? 1 : 0);
     });
     // Each Dungeon tile is its own boss portrait, so there's no single
@@ -6030,16 +6055,22 @@ var qrcode = function() {
       // buildTxRowHTML already renders a linked boss's own portrait + HP
       // bar in place of the usual tag line, so the expanded row keeps
       // showing this boss exactly the way the tile did, just full-width.
+      // Tapped open, it expands into buildTxRowHTML's full row, which
+      // already shows this boss's own HP bar in place of the usual tag
+      // line -- that's the one place the boss's overall debt HP (balance
+      // vs startingBalance) shows. The collapsed tile below shows this
+      // one payment's paid/pending/unpaid status instead, same green/
+      // coral/yellow bar Guild Hall and The Keep use, so Boss Dungeon
+      // reads consistently with the other two rosters at a glance.
       if(menuOpen) return buildTxRowHTML(t, today);
       const inPeriod = isDueThisView(e);
-      const starting = Number(boss.startingBalance || 0);
-      const hpPct = starting > 0 ? Math.max(0, Math.min(100, (Number(boss.balance || 0) / starting) * 100)) : 0;
+      const statusPct = t.status === "paid" ? 100 : (t.status === "pending" ? (t.deducted ? 75 : 50) : 0);
       return `<div class="shop-tile${inPeriod ? " current-fortnight-tile" : " not-due-tile"}" data-dungeon-sub-id="${t.id}">
         <span class="shop-tile-icon dungeon-sub-icon">${bossPortraitSVG(boss)}</span>
         <div class="shop-tile-name shop-tile-name-lg">${escapeHtml(boss.name || "Unnamed")}</div>
         <div class="shop-tile-due">${fmtDate(parseISO(t.date), state.settings.dateFormat)}</div>
         <div class="shop-tile-gold">${fmtMoney(effectiveAmount(t))}</div>
-        ${inPeriod ? `<div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${hpPct}%;background:var(--coral);"></div></div>` : ""}
+        ${inPeriod ? `<div class="boss-hp-track shop-tile-bar"><div class="boss-hp-fill" style="width:${statusPct}%;background:${guildStatusColor(t)};"></div></div>` : ""}
       </div>`;
     }).join("");
     return `${bar}<div class="shop-tile-row">${tiles}</div>`;
