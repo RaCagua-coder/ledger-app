@@ -5252,6 +5252,41 @@ var qrcode = function() {
     state.knownShopKindFixes20261022V1 = true;
     if(changed) save();
   }
+  // One-time resync for the 2026-10-15 pay period: a manual Bank Balance
+  // correction at some point before the Marketplace/Stables/Tavern
+  // envelope-accounting bug above was fixed left the locked Max HP
+  // snapshot out of sync with the real balance -- the HP bar was reading
+  // nearly $50 lower than Remaining actually was. This recomputes Max HP
+  // once from the CURRENT balance plus this period's own (now correctly
+  // envelope-aware) committed total, so the HP bar and Remaining agree
+  // again. It only ever touches the locked snapshot -- never the balance,
+  // never any bill or transaction.
+  function patchMaxHpResync20261015(){
+    if(state.maxHpResync20261015V1) return;
+    state.maxHpResync20261015V1 = true;
+    const startISO = "2026-10-15";
+    const bal = state.bankBalances ? state.bankBalances[startISO] : undefined;
+    if(bal === undefined || bal === null) return;
+    const start = toDateOnly(parseISO(startISO));
+    const end = periodEnd(start);
+    const periodBills = state.transactions.filter(t => {
+      const d = toDateOnly(parseISO(t.date));
+      return d >= start && d <= end;
+    }).filter(t => (t.type === "bill" || t.type === "transaction") && !isAffirmTag(t.tags));
+    // Only the portion that's already come OUT of the real balance (paid, or
+    // pending-and-deducted) belongs back in Max HP -- unpaid and
+    // pending-not-yet-deducted bills haven't touched the balance yet, so
+    // adding them here would double-count them (once as still-committed
+    // damage on the bar, once baked into a bloated Max HP).
+    const alreadyDeducted = periodBills
+      .filter(t => t.status === "paid" || (t.status === "pending" && t.deducted))
+      .reduce((s,t) => s + effectiveAmount(t), 0);
+    const goal = Number(state.settings.carryoverGoal) || 0;
+    const newMax = round2(Number(bal) + alreadyDeducted + goal);
+    if(!state.hpMaxByPeriod) state.hpMaxByPeriod = {};
+    state.hpMaxByPeriod[startISO] = newMax;
+    save();
+  }
   // One-time self-heal for the stray-placeholder-next-to-a-real-occurrence
   // bug: before clearStrayShopEnvelopePlaceholder existed, scrolling ahead
   // into a future period before a shop envelope (Marketplace/Stables/
@@ -6484,17 +6519,24 @@ var qrcode = function() {
     });
     periodBills = periodBills.filter(t => (t.type === "bill" || t.type === "transaction") && !isAffirmTag(t.tags));
 
-    const unpaidTotal = periodBills.filter(t => t.status === "unpaid").reduce((s,t) => s + Number(t.amount || 0), 0);
+    // effectiveAmount, not the raw t.amount -- a Shop Envelope (Marketplace/
+    // Stables/Tavern) bill's real "damage" is whatever gold is actually
+    // still left on it, same as Outstanding/Remaining treat it everywhere
+    // else in the app. Using the full budgeted amount here double-counted
+    // gold already spent through the Teller (which already came out of the
+    // real balance) as still-unpaid, making the bar read far lower than
+    // Remaining actually was.
+    const unpaidTotal = periodBills.filter(t => t.status === "unpaid").reduce((s,t) => s + effectiveAmount(t), 0);
     const pendingOrangeTotal = periodBills
       .filter(t => t.status === "pending" && !t.deducted)
-      .reduce((s,t) => s + Number(t.amount || 0), 0);
+      .reduce((s,t) => s + effectiveAmount(t), 0);
     const pendingYellowTotal = periodBills
       .filter(t => t.status === "pending" && t.deducted)
-      .reduce((s,t) => s + Number(t.amount || 0), 0);
+      .reduce((s,t) => s + effectiveAmount(t), 0);
     // Paid = gone for good. Unlike the other three states, this never comes
     // back to green when a bill clears -- it moves into black instead and
     // stays there, same as real HP damage.
-    const paidTotal = periodBills.filter(t => t.status === "paid").reduce((s,t) => s + Number(t.amount || 0), 0);
+    const paidTotal = periodBills.filter(t => t.status === "paid").reduce((s,t) => s + effectiveAmount(t), 0);
     const committed = unpaidTotal + pendingOrangeTotal + pendingYellowTotal + paidTotal;
 
     const fillEl = $("#hpBarFill");
@@ -11081,6 +11123,7 @@ var qrcode = function() {
   migrateShopPurchaseKindFlag();
   patchKnownApple275MarketplaceCharge();
   patchKnownShopKindFixes20261022();
+  patchMaxHpResync20261015();
   migrateStrayShopEnvelopePlaceholders();
   $("#shopPotionBottleIcon").innerHTML = shopPotionIconSVG();
   applyBossInterest();
