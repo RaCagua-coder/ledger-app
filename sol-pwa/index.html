@@ -1887,13 +1887,13 @@
 <div class="overlay" id="transferConfirmOverlay">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <h2 id="transferConfirmTitle">Transfer Remaining Amount?</h2>
+    <h2 id="transferConfirmTitle">Transfer Balance?</h2>
     <div class="transfer-detail-row">
       <span class="transfer-detail-label" id="transferConfirmExistingLabel">Next Period Balance</span>
       <span class="transfer-detail-amt transfer-detail-amt-white" id="transferConfirmExistingAmt">$0.00</span>
     </div>
     <div class="transfer-detail-row" style="margin-top:8px;">
-      <span class="transfer-detail-label" id="transferConfirmAmtLabel">Remaining Amount</span>
+      <span class="transfer-detail-label" id="transferConfirmAmtLabel">Balance Amount</span>
       <span class="transfer-detail-amt" id="transferConfirmAmt">$0.00</span>
     </div>
     <div class="transfer-detail-row" style="margin-top:8px;">
@@ -4680,6 +4680,8 @@ var qrcode = function() {
       bossesSeeded: false,
       badges: [],
       carryoverByPeriod: {},
+      carriedOutstanding: {},
+      carryoverGoalByPeriod: {},
       envelopeSpent: {},
       notepad: ""
     };
@@ -4705,6 +4707,12 @@ var qrcode = function() {
         if(!Array.isArray(merged.badges)) merged.badges = [];
         if(!merged.carryoverByPeriod || typeof merged.carryoverByPeriod !== "object" || Array.isArray(merged.carryoverByPeriod)){
           merged.carryoverByPeriod = {};
+        }
+        if(!merged.carriedOutstanding || typeof merged.carriedOutstanding !== "object" || Array.isArray(merged.carriedOutstanding)){
+          merged.carriedOutstanding = {};
+        }
+        if(!merged.carryoverGoalByPeriod || typeof merged.carryoverGoalByPeriod !== "object" || Array.isArray(merged.carryoverGoalByPeriod)){
+          merged.carryoverGoalByPeriod = {};
         }
         if(!merged.envelopeSpent || typeof merged.envelopeSpent !== "object" || Array.isArray(merged.envelopeSpent)){
           merged.envelopeSpent = {};
@@ -5382,7 +5390,7 @@ var qrcode = function() {
     return {
       get(){
         if(state.viewMode !== "1") return affirm ? scratchAffirmBalance : scratchBalance;
-        const v = bag[balanceISOForAction()];
+        const v = bag[movedOutIds(state.currentStartISO, affirm).get(t.id) || balanceISOForAction()];
         return (v === undefined || v === null) ? null : v;
       },
       set(v){
@@ -5391,11 +5399,85 @@ var qrcode = function() {
           else scratchBalance = (v === undefined ? null : v);
           return;
         }
-        const iso = balanceISOForAction();
+        const iso = movedOutIds(state.currentStartISO, affirm).get(t.id) || balanceISOForAction();
         if(v === null || v === undefined) delete bag[iso];
         else bag[iso] = v;
       }
     };
+  }
+
+  // A shop envelope's remaining gold is tracked per period (envelopeSpent is
+  // keyed by period start). For an item carried INTO this period by a Balance
+  // transfer, read the gold spent from the period it came FROM -- otherwise
+  // Marketplace/Stables/Tavern items already spent down to $0 there would
+  // reappear at their full budget here.
+  function effectiveAmountFor(t, viewStartISO){
+    if(!isShopEnvelope(t)) return Number(t.amount || 0);
+    const rec = (state.carriedOutstanding || {})[viewStartISO];
+    const inRec = rec && rec.fromISO && ["bank","affirm"].some(k => rec[k] && Array.isArray(rec[k].ids) && rec[k].ids.indexOf(t.id) !== -1);
+    if(inRec){
+      const spent = Number((((state.envelopeSpent || {})[rec.fromISO]) || {})[envelopeKeyFor(t)] || 0);
+      return round2(Number(t.amount || 0) - spent);
+    }
+    return effectiveAmount(t);
+  }
+
+  // ---------- Alchemist: per-period ----------
+  // The Alchemist amount belongs to ONE pay period only. It never carries
+  // forward or back: every other period reads its own value (default $0).
+  function getAlchemistGoal(startISO){
+    const m = state.carryoverGoalByPeriod || {};
+    return Number(m[startISO]) || 0;
+  }
+  function setAlchemistGoal(startISO, v){
+    if(!state.carryoverGoalByPeriod || typeof state.carryoverGoalByPeriod !== "object") state.carryoverGoalByPeriod = {};
+    const n = Number(v) || 0;
+    if(n) state.carryoverGoalByPeriod[startISO] = n;
+    else delete state.carryoverGoalByPeriod[startISO];
+  }
+  // One-time: the old single global Alchemist amount becomes the amount for
+  // the period that contains today, and the global is cleared.
+  function migrateAlchemistPerPeriod(){
+    if(state.alchemistPerPeriodMigratedV1) return;
+    state.alchemistPerPeriodMigratedV1 = true;
+    const g = Number(state.settings && state.settings.carryoverGoal) || 0;
+    if(g){
+      setAlchemistGoal(fmtISO(periodStartContaining(toDateOnly(new Date()))), g);
+      state.settings.carryoverGoal = 0;
+    }
+    save();
+  }
+
+  // ---------- Outstanding carried to the next period ----------
+  // When a Balance is transferred forward, the still-unpaid / not-yet-
+  // deducted items behind it go with it: they're recorded here (by id, per
+  // account) against the NEXT period, so that period counts them as
+  // Outstanding and flags them as carried over from the previous period.
+  // The period they came from stops counting them (the money to cover them
+  // left with the balance), and paying one draws from the next period's
+  // balance. Shape: carriedOutstanding[nextISO] = { fromISO, bank:{ids:[]}, affirm:{ids:[]} }
+  function carriedInIds(startISO, isAffirm){
+    const rec = (state.carriedOutstanding || {})[startISO];
+    const a = rec && rec[isAffirm ? "affirm" : "bank"];
+    return new Set(a && Array.isArray(a.ids) ? a.ids : []);
+  }
+  // Map of transaction id -> nextISO for everything moved OUT of startISO.
+  function movedOutIds(startISO, isAffirm){
+    const out = new Map();
+    const all = state.carriedOutstanding || {};
+    Object.keys(all).forEach(nextISO => {
+      const r = all[nextISO];
+      if(!r || r.fromISO !== startISO) return;
+      const a = r[isAffirm ? "affirm" : "bank"];
+      if(a && Array.isArray(a.ids)) a.ids.forEach(id => out.set(id, nextISO));
+    });
+    return out;
+  }
+  // The transactions carried INTO this period (either account).
+  function carriedInTransactions(startISO){
+    const b = carriedInIds(startISO, false), a = carriedInIds(startISO, true);
+    if(!b.size && !a.size) return [];
+    return state.transactions.filter(t => b.has(t.id) || a.has(t.id));
   }
 
   // A bill/transaction can be linked to a Boss (the HP-bar debt tracker).
@@ -5426,13 +5508,16 @@ var qrcode = function() {
     return cap ? (n.charAt(0).toUpperCase() + n.slice(1)) : n;
   }
 
-  // Tapping "Remaining" (either account) offers to roll that leftover
-  // amount into next pay period's Balance field for that same account
-  // (adding to whatever's already there).
+  // Tapping "Remaining" (either account) offers to roll this period's whole
+  // account Balance into next period's Balance for that same account
+  // (adding to whatever's already there). The still-outstanding items behind
+  // that balance move with it: next period counts them as Outstanding and
+  // flags them as carried over from the previous period, so its Remaining
+  // comes out the same as this one's did.
   function carryRemainingToNextPeriod(isAffirm){
     const acctName = isAffirm ? account2Name() : account1Name();
     if(state.viewMode !== "1"){
-      showAlert("Switch to the single " + periodNoun() + " view to carry over " + acctName + " Remaining.");
+      showAlert("Switch to the single " + periodNoun() + " view to carry over " + acctName + " Balance.");
       return;
     }
     const bal = isAffirm ? getAffirmBalance() : getBankBalance();
@@ -5446,24 +5531,36 @@ var qrcode = function() {
     // now — a future period you're previewing doesn't inherit it.
     const today = toDateOnly(new Date());
     const isLivePeriod = start <= today && today <= end;
+    const startISOHere = fmtISO(start);
     let overdueAndCurrent = isLivePeriod
       ? state.transactions.filter(t => toDateOnly(parseISO(t.date)) <= end)
       : state.transactions.filter(t => {
           const d = toDateOnly(parseISO(t.date));
           return d >= start && d <= end;
-        });
+        }).concat(carriedInTransactions(startISOHere).filter(t => toDateOnly(parseISO(t.date)) < start));
     if(state.tagFilters && state.tagFilters.length){
       overdueAndCurrent = overdueAndCurrent.filter(matchesTagFilters);
     }
     const isOutstanding = t => t.status === "unpaid" || (t.status === "pending" && !t.deducted);
-    const outstanding = overdueAndCurrent
+    // Items already moved out by an earlier transfer aren't this period's
+    // to move again.
+    const alreadyMoved = movedOutIds(startISOHere, isAffirm);
+    const outstandingItems = overdueAndCurrent
       .filter(t => t.type === "bill" || t.type === "transaction")
       .filter(t => isAffirmTag(t.tags) === isAffirm)
       .filter(isOutstanding)
-      .reduce((s,t) => s + effectiveAmount(t), 0);
+      .filter(t => !alreadyMoved.has(t.id));
+    const outstanding = outstandingItems.reduce((s,t) => s + effectiveAmountFor(t, startISOHere), 0);
     const remaining = round2(Number(bal) - outstanding);
-    if(remaining <= 0){
-      showAlert("There's no " + acctName + " Remaining left to carry over.");
+    // The whole account Balance moves, not just what's left after
+    // Outstanding.
+    const transferAmt = round2(Number(bal));
+    if(transferAmt <= 0 && !outstandingItems.length){
+      showAlert("There's no " + acctName + " Balance left to carry over.");
+      return;
+    }
+    if(transferAmt <= 0){
+      showAlert("There's no " + acctName + " Balance to carry over. The outstanding items stay with this " + periodNoun() + ".");
       return;
     }
     ensureCurrentStart();
@@ -5472,12 +5569,15 @@ var qrcode = function() {
     const bag = isAffirm ? state.affirmBalances : state.bankBalances;
     const existing = bag[nextISO];
     const hasExisting = existing !== undefined && existing !== null;
-    const newVal = hasExisting ? round2(Number(existing) + remaining) : remaining;
+    const newVal = hasExisting ? round2(Number(existing) + transferAmt) : transferAmt;
     // Moving the money out of this period, not duplicating it — so this
-    // period's Balance drops by the same amount, leaving its Remaining
-    // at zero.
-    const newCurrentBal = round2(Number(bal) - remaining);
-    const note = "This " + periodNoun() + "'s " + acctName + " Remaining will become $0.00.";
+    // period's Balance drops by the same amount.
+    const newCurrentBal = round2(Number(bal) - transferAmt);
+    const note = "This " + periodNoun() + "'s " + acctName + " Balance will become $0.00."
+      + (outstandingItems.length
+        ? " " + fmtMoney(outstanding) + " still outstanding (" + outstandingItems.length + " item" + (outstandingItems.length === 1 ? "" : "s")
+          + ") moves with it and shows in next " + periodNoun() + " flagged as carried over from this one."
+        : "");
     // Same rule as an Income entry: Max HP is a locked snapshot, so money
     // landing in next period's balance only raises the HP bar if explicitly
     // set/bumped here. If next period's snapshot doesn't exist yet, this
@@ -5486,19 +5586,34 @@ var qrcode = function() {
     const nextHpMax = isAffirm ? null : state.hpMaxByPeriod[nextISO];
     const hadLockedNextHp = !isAffirm && nextHpMax !== undefined && nextHpMax !== null;
     const prevCarryoverRec = Object.assign({}, (state.carryoverByPeriod || {})[currentISO] || {});
-    showTransferConfirm(acctName, remaining, hasExisting ? Number(existing) : 0, newVal, note, () => {
+    const acctKey = isAffirm ? "affirm" : "bank";
+    if(!state.carriedOutstanding || typeof state.carriedOutstanding !== "object") state.carriedOutstanding = {};
+    const prevCarried = state.carriedOutstanding[nextISO] === undefined
+      ? undefined : JSON.parse(JSON.stringify(state.carriedOutstanding[nextISO]));
+    showTransferConfirm(acctName, transferAmt, hasExisting ? Number(existing) : 0, newVal, note, () => {
       bag[currentISO] = newCurrentBal;
       bag[nextISO] = newVal;
       if(!isAffirm){
-        if(hadLockedNextHp) state.hpMaxByPeriod[nextISO] = Number(nextHpMax) + remaining;
-        else state.hpMaxByPeriod[nextISO] = remaining;
+        if(hadLockedNextHp) state.hpMaxByPeriod[nextISO] = Number(nextHpMax) + transferAmt;
+        else state.hpMaxByPeriod[nextISO] = transferAmt;
+      }
+      // Flag + move the outstanding items. Unioned with anything already
+      // carried into next period for this account.
+      if(outstandingItems.length){
+        const rec = state.carriedOutstanding[nextISO] || (state.carriedOutstanding[nextISO] = { fromISO: currentISO });
+        rec.fromISO = currentISO;
+        const have = new Set((rec[acctKey] && rec[acctKey].ids) || []);
+        outstandingItems.forEach(t => have.add(t.id));
+        rec[acctKey] = { ids: Array.from(have) };
       }
       // Track this carryover (combined across both accounts) and award
-      // any newly-reached carryover badge tiers.
-      recordCarryover(currentISO, isAffirm, remaining);
+      // any newly-reached carryover badge tiers. Badges count real
+      // leftover money only, not balance that was spoken for by
+      // outstanding items.
+      recordCarryover(currentISO, isAffirm, Math.max(0, remaining));
       const newlyEarned = checkCarryoverBadges(currentISO);
       renderAll();
-      showGenericUndo("Transferred " + fmtMoney(remaining) + " to next " + periodNoun() + "'s " + acctName + " Balance.", () => {
+      showGenericUndo("Transferred " + fmtMoney(transferAmt) + " to next " + periodNoun() + "'s " + acctName + " Balance.", () => {
         bag[currentISO] = bal;
         if(hasExisting) bag[nextISO] = existing;
         else delete bag[nextISO];
@@ -5506,6 +5621,8 @@ var qrcode = function() {
           if(hadLockedNextHp) state.hpMaxByPeriod[nextISO] = nextHpMax;
           else delete state.hpMaxByPeriod[nextISO];
         }
+        if(prevCarried === undefined) delete state.carriedOutstanding[nextISO];
+        else state.carriedOutstanding[nextISO] = prevCarried;
         if(isAffirm) recordCarryover(currentISO, true, prevCarryoverRec.affirm || 0);
         else recordCarryover(currentISO, false, prevCarryoverRec.bank || 0);
         // Note: any badge already earned from this carryover stays earned
@@ -6318,19 +6435,23 @@ var qrcode = function() {
     const isLivePeriod = start <= today && today <= end;
     let overdueAndCurrent = isLivePeriod
       ? state.transactions.filter(t => toDateOnly(parseISO(t.date)) <= end)
-      : inRange;
+      : inRange.concat(carriedInTransactions(fmtISO(start)).filter(t => toDateOnly(parseISO(t.date)) < start));
     if(state.tagFilters && state.tagFilters.length){
       overdueAndCurrent = overdueAndCurrent.filter(matchesTagFilters);
     }
-    const outstandingCandidates = overdueAndCurrent.filter(t => t.type === "bill" || t.type === "transaction");
+    const movedOutBank = movedOutIds(fmtISO(start), false);
+    const movedOutAffirm = movedOutIds(fmtISO(start), true);
+    const outstandingCandidates = overdueAndCurrent
+      .filter(t => t.type === "bill" || t.type === "transaction")
+      .filter(t => !(isAffirmTag(t.tags) ? movedOutAffirm : movedOutBank).has(t.id));
     const outstanding = outstandingCandidates
       .filter(t => !isAffirmTag(t.tags))
       .filter(isOutstanding)
-      .reduce((s,t) => s + effectiveAmount(t), 0);
+      .reduce((s,t) => s + effectiveAmountFor(t, fmtISO(start)), 0);
     const affirmOutstanding = outstandingCandidates
       .filter(t => isAffirmTag(t.tags))
       .filter(isOutstanding)
-      .reduce((s,t) => s + effectiveAmount(t), 0);
+      .reduce((s,t) => s + effectiveAmountFor(t, fmtISO(start)), 0);
 
     $("#txCountBar").textContent = "BILLS  " + fmtMoney(totalBills);
     $("#fOutstanding").textContent = fmtMoney(outstanding);
@@ -6338,17 +6459,18 @@ var qrcode = function() {
 
     // Flag Outstanding when part of the total is backlog carried in from an
     // already-ended previous period, rather than this period's own items.
-    const backlogCandidates = isLivePeriod
-      ? outstandingCandidates.filter(t => toDateOnly(parseISO(t.date)) < start)
-      : [];
+    // (A previewed future period shows it too when a transfer carried
+    // outstanding items into it -- those are the only earlier-dated items
+    // that can be in its candidate list.)
+    const backlogCandidates = outstandingCandidates.filter(t => toDateOnly(parseISO(t.date)) < start);
     const bankBacklog = backlogCandidates
       .filter(t => !isAffirmTag(t.tags))
       .filter(isOutstanding)
-      .reduce((s,t) => s + effectiveAmount(t), 0);
+      .reduce((s,t) => s + effectiveAmountFor(t, fmtISO(start)), 0);
     const affirmBacklog = backlogCandidates
       .filter(t => isAffirmTag(t.tags))
       .filter(isOutstanding)
-      .reduce((s,t) => s + effectiveAmount(t), 0);
+      .reduce((s,t) => s + effectiveAmountFor(t, fmtISO(start)), 0);
     const outstandingFlagEl = $("#fOutstandingFlag");
     if(bankBacklog > 0){
       outstandingFlagEl.style.display = "inline";
@@ -6384,7 +6506,7 @@ var qrcode = function() {
       // 1's own Remaining line, live as you type -- same reversible,
       // no-real-transaction siphon as the HP bar's gold slice and the
       // Available figure above. Clear the input and this snaps right back.
-      const alchemistGoal = Number(state.settings.carryoverGoal) || 0;
+      const alchemistGoal = getAlchemistGoal(fmtISO(start));
       const remaining = Number(bal) - outstanding - alchemistGoal;
       remainingEl.textContent = fmtMoney(remaining);
       remainingEl.className = "f-value amt " + (remaining < 0 ? "remaining-neg" : "remaining-pos");
@@ -6517,6 +6639,11 @@ var qrcode = function() {
       const d = toDateOnly(parseISO(t.date));
       return d >= start && d <= end;
     });
+    // Items carried in from the previous period by a Balance transfer
+    // (outstanding when moved) take damage here too, since the money that
+    // covers them came across with the balance. Paid ones turn black.
+    const carriedInHp = carriedInTransactions(fmtISO(start)).filter(t => toDateOnly(parseISO(t.date)) < start);
+    periodBills = periodBills.concat(carriedInHp);
     periodBills = periodBills.filter(t => (t.type === "bill" || t.type === "transaction") && !isAffirmTag(t.tags));
 
     // effectiveAmount, not the raw t.amount -- a Shop Envelope (Marketplace/
@@ -6526,17 +6653,17 @@ var qrcode = function() {
     // gold already spent through the Teller (which already came out of the
     // real balance) as still-unpaid, making the bar read far lower than
     // Remaining actually was.
-    const unpaidTotal = periodBills.filter(t => t.status === "unpaid").reduce((s,t) => s + effectiveAmount(t), 0);
+    const unpaidTotal = periodBills.filter(t => t.status === "unpaid").reduce((s,t) => s + effectiveAmountFor(t, fmtISO(start)), 0);
     const pendingOrangeTotal = periodBills
       .filter(t => t.status === "pending" && !t.deducted)
-      .reduce((s,t) => s + effectiveAmount(t), 0);
+      .reduce((s,t) => s + effectiveAmountFor(t, fmtISO(start)), 0);
     const pendingYellowTotal = periodBills
       .filter(t => t.status === "pending" && t.deducted)
-      .reduce((s,t) => s + effectiveAmount(t), 0);
+      .reduce((s,t) => s + effectiveAmountFor(t, fmtISO(start)), 0);
     // Paid = gone for good. Unlike the other three states, this never comes
     // back to green when a bill clears -- it moves into black instead and
     // stays there, same as real HP damage.
-    const paidTotal = periodBills.filter(t => t.status === "paid").reduce((s,t) => s + effectiveAmount(t), 0);
+    const paidTotal = periodBills.filter(t => t.status === "paid").reduce((s,t) => s + effectiveAmountFor(t, fmtISO(start)), 0);
     const committed = unpaidTotal + pendingOrangeTotal + pendingYellowTotal + paidTotal;
 
     const fillEl = $("#hpBarFill");
@@ -6553,7 +6680,7 @@ var qrcode = function() {
     // but once set aside it's the LAST thing damage can ever reach --
     // every bill/encounter has to eat through all of green (and then the
     // scaled-down committed bars below) before it could ever touch gold.
-    const alchemistGoldRaw = Number(state.settings.carryoverGoal) || 0;
+    const alchemistGoldRaw = getAlchemistGoal(fmtISO(start));
     const alchemistGold = Math.max(0, Math.min(alchemistGoldRaw, maxHP > 0 ? maxHP : 0));
     const effectiveMax = maxHP - alchemistGold;
     const green = effectiveMax - committed;
@@ -7086,10 +7213,10 @@ var qrcode = function() {
   // balance, plus the remaining amount being moved in, equals its new
   // balance — each box labeled with the actual account name.
   function showTransferConfirm(acctName, remaining, existingAmt, newAmt, note, onConfirm){
-    $("#transferConfirmTitle").textContent = "Transfer " + acctName + " Remaining Amount?";
+    $("#transferConfirmTitle").textContent = "Transfer " + acctName + " Balance?";
     $("#transferConfirmExistingLabel").textContent = acctName + " Next " + periodNoun(true) + " Balance";
     $("#transferConfirmExistingAmt").textContent = fmtMoney(existingAmt);
-    $("#transferConfirmAmtLabel").textContent = acctName + " Remaining Amount";
+    $("#transferConfirmAmtLabel").textContent = acctName + " Balance Amount";
     $("#transferConfirmAmt").textContent = fmtMoney(remaining);
     $("#transferConfirmNewLabel").textContent = acctName + " New Balance";
     $("#transferConfirmNewAmt").textContent = fmtMoney(newAmt);
@@ -10354,35 +10481,51 @@ var qrcode = function() {
   // payday," which only makes sense anchored to the present.
   function computeSafeToSpend(){
     const todayDate = toDateOnly(new Date());
-    const pStart = periodStartContaining(todayDate);
+    // The Alchemist bar measures the pay period being viewed (single-period
+    // view), so its Available always matches that period's Remaining.
+    let pStart = periodStartContaining(todayDate);
+    if(state.viewMode === "1"){ ensureCurrentStart(); pStart = toDateOnly(parseISO(state.currentStartISO)); }
     const pEnd = periodEnd(pStart);
     const pStartISO = fmtISO(pStart);
     const nextPayday = addDays(pEnd, 1);
-    const daysUntil = Math.max(1, Math.round((nextPayday - todayDate) / 86400000));
+    let daysUntil;
+    if(pStart > todayDate) daysUntil = Math.max(1, Math.round((nextPayday - pStart) / 86400000));
+    else daysUntil = Math.max(1, Math.round((nextPayday - todayDate) / 86400000));
 
     const bal = state.bankBalances[pStartISO];
     const isOutstanding = t => t.status === "unpaid" || (t.status === "pending" && !t.deducted);
-    const outstanding = state.transactions
-      .filter(t => (t.type === "bill" || t.type === "transaction") && toDateOnly(parseISO(t.date)) <= pEnd)
+    const live = pStart <= todayDate && todayDate <= pEnd;
+    const movedOut = movedOutIds(pStartISO, false);
+    // Same item set as the footer's Remaining: a live period also owes any
+    // earlier backlog; a previewed one only its own items plus whatever a
+    // transfer carried into it.
+    const pool = live
+      ? state.transactions.filter(t => toDateOnly(parseISO(t.date)) <= pEnd)
+      : state.transactions.filter(t => { const d = toDateOnly(parseISO(t.date)); return d >= pStart && d <= pEnd; })
+          .concat(carriedInTransactions(pStartISO).filter(t => toDateOnly(parseISO(t.date)) < pStart));
+    const outstanding = pool
+      .filter(t => (t.type === "bill" || t.type === "transaction"))
       .filter(t => !isAffirmTag(t.tags))
+      .filter(t => !movedOut.has(t.id))
       .filter(isOutstanding)
-      .reduce((s,t) => s + effectiveAmount(t), 0);
+      .reduce((s,t) => s + effectiveAmountFor(t, pStartISO), 0);
 
-    return { bal, outstanding, daysUntil, nextPayday };
+    return { bal, outstanding, daysUntil, nextPayday, pStartISO };
   }
 
   function renderSafeToSpend(){
-    const { bal, outstanding, daysUntil, nextPayday } = computeSafeToSpend();
+    const { bal, outstanding, daysUntil, nextPayday, pStartISO } = computeSafeToSpend();
+    const goalHere = getAlchemistGoal(pStartISO);
     $("#stsDaysCaption").textContent =
       daysUntil + (daysUntil === 1 ? " day" : " days") + " until payday (" +
       fmtDate(nextPayday, state.settings.dateFormat) + ")";
 
     if($("#carryoverInput") !== document.activeElement){
-      const g = Number(state.settings.carryoverGoal) || 0;
+      const g = goalHere;
       $("#carryoverInput").value = g ? fmtMoneyWhole(g) : "";
     }
     if($("#carryoverInputTop") !== document.activeElement){
-      const g = Number(state.settings.carryoverGoal) || 0;
+      const g = goalHere;
       $("#carryoverInputTop").value = g ? fmtMoneyWhole(g) : "";
     }
 
@@ -10399,7 +10542,7 @@ var qrcode = function() {
       return;
     }
     const available = Number(bal) - outstanding;
-    const goal = Number(state.settings.carryoverGoal) || 0;
+    const goal = goalHere;
     // Test mode: the Alchemist input siphons straight out of Available,
     // live, as you type -- same reversible, no-real-transaction siphon the
     // HP bar's gold slice already does. Nothing is written to the ledger;
@@ -10416,19 +10559,24 @@ var qrcode = function() {
 
   function onCarryoverInput(e){
     const v = e.target.value.replace(/[$,]/g, "");
-    state.settings.carryoverGoal = v === "" ? 0 : Number(v);
+    ensureCurrentStart();
+    setAlchemistGoal(viewedAlchemistISO(), v === "" ? 0 : Number(v));
     renderSafeToSpend();
     renderFooter();
     updateHpBar();
     save();
   }
+  // The period the Alchemist input edits: the one on screen.
+  function viewedAlchemistISO(){
+    return computeSafeToSpend().pStartISO;
+  }
   function onCarryoverFocus(e){
-    const g = Number(state.settings.carryoverGoal) || 0;
+    const g = getAlchemistGoal(viewedAlchemistISO());
     e.target.value = g ? String(g) : "";
     pinCursorToEnd2(e);
   }
   function onCarryoverBlur(e){
-    const g = Number(state.settings.carryoverGoal) || 0;
+    const g = getAlchemistGoal(viewedAlchemistISO());
     e.target.value = g ? fmtMoneyWhole(g) : "";
   }
   $("#carryoverInput").addEventListener("input", onCarryoverInput);
@@ -10482,12 +10630,16 @@ var qrcode = function() {
     const isOutstandingTest = t => t.status === "unpaid" || (t.status === "pending" && !t.deducted);
     const overdueAndCurrent = isLiveRange
       ? state.transactions.filter(t => toDateOnly(parseISO(t.date)) <= end)
-      : inRange;
-    const outstandingCandidates = overdueAndCurrent.filter(t => t.type === "bill" || t.type === "transaction");
+      : inRange.concat(carriedInTransactions(fmtISO(start)).filter(t => toDateOnly(parseISO(t.date)) < start));
+    const movedOutBankH = movedOutIds(fmtISO(start), false);
+    const movedOutAffirmH = movedOutIds(fmtISO(start), true);
+    const outstandingCandidates = overdueAndCurrent
+      .filter(t => t.type === "bill" || t.type === "transaction")
+      .filter(t => !(isAffirmTag(t.tags) ? movedOutAffirmH : movedOutBankH).has(t.id));
     const outstandingFor = wantAffirm => outstandingCandidates
       .filter(t => isAffirmTag(t.tags) === wantAffirm)
       .filter(isOutstandingTest)
-      .reduce((s, t) => s + effectiveAmount(t), 0);
+      .reduce((s, t) => s + effectiveAmountFor(t, fmtISO(start)), 0);
 
     const buildFor = (wantAffirm, currentBal) => {
       if(currentBal === null || currentBal === undefined) return [];
@@ -11125,6 +11277,7 @@ var qrcode = function() {
   patchKnownShopKindFixes20261022();
   patchMaxHpResync20261015();
   migrateStrayShopEnvelopePlaceholders();
+  migrateAlchemistPerPeriod();
   $("#shopPotionBottleIcon").innerHTML = shopPotionIconSVG();
   applyBossInterest();
   checkBossDefeatBadges(); // silent catch-up on load; no popup for pre-existing payoffs
